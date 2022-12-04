@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using WorkForceGuards.Models.DTO;
 using WorkForceManagementV0.Contexts;
 using WorkForceManagementV0.Migrations;
 using WorkForceManagementV0.Models;
@@ -22,7 +23,7 @@ namespace WorkForceManagementV0.Repositories
         {
 
             DataWithError data = new DataWithError();
-            var sub = db.SubLocations.ToList();
+            var sub = db.SubLocations.Include(x => x.Location).Select(x => new SubLocationViewModel(x)).ToList();
             data.Result = sub;
             data.ErrorMessage = null;
             return data;
@@ -31,46 +32,35 @@ namespace WorkForceManagementV0.Repositories
         public DataWithError UpdateSublocation(SubLocation model)
         {
             DataWithError data = new DataWithError();
-            //if (CheckUniqValue(model))
-
-            //{
-
-                db.Entry(model).State = EntityState.Modified;
-                db.SaveChanges();
-                data.Result = model;
-                data.ErrorMessage = null;
+            if(!CheckUniqValue(model))
+            {
+                data.Result = null;
+                data.ErrorMessage = "Sublocation with the same name exists!";
                 return data;
-
-            //}
-            //data.Result = null;
-            //data.ErrorMessage = "Please check your data ";
-            //return data;
-
-
-
+            }
+            db.Entry(model).State = EntityState.Modified;
+            db.SaveChanges();
+            db.Entry(model).Reference(s => s.Location).Load();
+            data.Result = new SubLocationViewModel(model);
+            data.ErrorMessage = null;
+            return data;
 
         }
         public DataWithError Add(SubLocation model)
         {
-            SubLocation subdata = new SubLocation();
             DataWithError data = new DataWithError();
-            //if (CheckUniqValue(model))
-            //{
-                //var locationName = db.Locations.FirstOrDefault(x => x.Id == model.locationId).Name;
-                //subdata.LocationId = model.locationId;
-                //subdata.Name = locationName +"_" + model.Name +"_"+ model.FromDate +"_"+ model.ToDate;
-                db.SubLocations.Add(model);
-                db.SaveChanges();
-                data.Result = model;
-                data.ErrorMessage = null;
+            if (!CheckUniqValue(model))
+            {
+                data.Result = null;
+                data.ErrorMessage = "Sublocation with the same name exists!";
                 return data;
-            //}
-            //data.Result = null;
-            //data.ErrorMessage = "Please check your data ";
-            //return data;
-
-
-
+            }
+            db.SubLocations.Add(model);
+            db.SaveChanges();
+            db.Entry(model).Reference(s => s.Location).Load();
+            data.Result = new SubLocationViewModel(model);
+            data.ErrorMessage = null;
+            return data;
         }
 
         //public bool CheckUniqValue(TransportationBinding value)
@@ -83,8 +73,27 @@ namespace WorkForceManagementV0.Repositories
         //    return false;
         //}
 
-      
+        public bool CheckUniqValue(SubLocation value)
+        {
+            var same = db.Locations.FirstOrDefault(a => a.Name.ToLower() == value.Name.ToLower() && a.Id != value.Id);
+            if (same == null)
+            {
+                return true;
+            }
+            return false;
 
-      
+        }
+        public bool CheckUniq(string value)
+        {
+            var same = db.Locations.FirstOrDefault(a => a.Name.ToLower() == value.ToLower());
+            if (same == null)
+            {
+                return true;
+            }
+            return false;
+
+        }
+
+
     }
 }

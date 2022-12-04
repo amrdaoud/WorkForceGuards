@@ -2,6 +2,7 @@
 using WorkForceManagementV0.Models.Bindings;
 using WorkForceManagementV0.Models;
 using WorkForceManagementV0.Repositories.Interfaces;
+using WorkForceManagementV0.Repositories;
 
 namespace WorkForceManagementV0.Controllers
 {
@@ -18,7 +19,7 @@ namespace WorkForceManagementV0.Controllers
             _SublocationService = SublocationService;
         }
 
-        [HttpPost("Add")]
+        [HttpPost]
         public IActionResult Add(SubLocation model)
         {
             var action = _SublocationService.Add(model);
@@ -31,7 +32,7 @@ namespace WorkForceManagementV0.Controllers
                 return BadRequest(new { ErrorMessage = action.ErrorMessage });
             }
         }
-        [HttpGet("All")]
+        [HttpGet]
         public IActionResult GetAll()
         {
             var action = _SublocationService.GetAll();
@@ -45,9 +46,17 @@ namespace WorkForceManagementV0.Controllers
             }
 
         }
-        [HttpPut("UpdateSublocation")]
-        public IActionResult UpdateSublocation(SubLocation model)
+        [HttpPut("{id}")]
+        public IActionResult UpdateSublocation(int id, SubLocation model)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+            if (id != model.Id)
+            {
+                return BadRequest();
+            }
             var action = _SublocationService.UpdateSublocation(model);
             if(string.IsNullOrEmpty(action.ErrorMessage))
             {
@@ -57,6 +66,13 @@ namespace WorkForceManagementV0.Controllers
             {
                 return BadRequest(new { Errormessage = action.ErrorMessage });
             }
+        }
+
+        [HttpGet("checkUniq")]
+
+        public ActionResult CheckUniq(string value)
+        {
+            return Ok(_SublocationService.CheckUniq(value));
         }
 
 
