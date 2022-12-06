@@ -1,5 +1,6 @@
 ﻿
 
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using WorkForceManagementV0.Models;
 
@@ -36,6 +37,17 @@ namespace WorkForceGuards.Models
             SublocationId = model.SublocationId;
             TransportationId = model.TransportationId;
             DayOffs = model.DayOffs;
+        }
+        public DailyAttendancePatternsDTO(Schedule schedule, StaffMember staffMember)
+        {
+            Id = 0;
+            ScheduleId = schedule.Id;
+            ScheduleName = schedule.Name;
+            StaffMemberId = staffMember.Id;
+            StaffMemberName = staffMember.Name;
+            SublocationId = 0;
+            TransportationId = 0;
+            DayOffs = new List<string>().ToArray();
         }
         public string ScheduleName { get; set; }
         public string StaffMemberName { get; set; }
