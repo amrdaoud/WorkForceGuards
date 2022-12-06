@@ -47,31 +47,31 @@ namespace WorkForceManagementV0.Controllers
 
             }
         }
-        [Authorize(Policy = "Admin")]
-        [HttpPut("{id}")]
-        public ActionResult Edit(int id, TransportationRouteBinding model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-            if (id != model.Id)
-            {
-                return BadRequest();
-            }
-            var action = _ITransportationRouteService.Update(model);
-            if (string.IsNullOrEmpty(action.ErrorMessage))
-            {
-                return Ok(action.Result);
+        //[Authorize(Policy = "Admin")]
+        //[HttpPut("{id}")]
+        //public ActionResult Edit(int id, TransportationRouteBinding model)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest();
+        //    }
+        //    if (id != model.Id)
+        //    {
+        //        return BadRequest();
+        //    }
+        //    var action = _ITransportationRouteService.Update(model);
+        //    if (string.IsNullOrEmpty(action.ErrorMessage))
+        //    {
+        //        return Ok(action.Result);
 
-            }
-            else
-            {
+        //    }
+        //    else
+        //    {
 
-                return BadRequest(new { ErrorMessage = action.ErrorMessage });
+        //        return BadRequest(new { ErrorMessage = action.ErrorMessage });
 
-            }
-        }
+        //    }
+        //}
         //[HttpGet("checkUniq")]
 
         //public ActionResult checkUniq(string value)
@@ -93,14 +93,14 @@ namespace WorkForceManagementV0.Controllers
             return Ok(_ITransportationRouteService.ConvertintoDatetime(id));
         }
         
-        [HttpPost("AddTransportation")]
+        [HttpPost("guard")]
         public IActionResult AddTransportation(TransportationBinding model)
         {
             if(!ModelState.IsValid)
             {
                 return BadRequest();
             }
-            var action = _ITransportationRouteService.AddTransportation(model);
+            var action = _ITransportationRouteService.AddGuard(model);
             if(string.IsNullOrEmpty(action.ErrorMessage))
             {
                 return Ok(action.Result);
@@ -110,6 +110,30 @@ namespace WorkForceManagementV0.Controllers
                  return BadRequest(new { Errormessag = action.ErrorMessage });
             }
 
+        }
+        [HttpPut("guard/{id}")]
+        public ActionResult EditGuard(int id, TransportationBinding model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
+            if (id != model.Id)
+            {
+                return BadRequest();
+            }
+            var action = _ITransportationRouteService.UpdateGuard(model);
+            if (string.IsNullOrEmpty(action.ErrorMessage))
+            {
+                return Ok(action.Result);
+
+            }
+            else
+            {
+
+                return BadRequest(new { ErrorMessage = action.ErrorMessage });
+
+            }
         }
         [HttpGet("checkSublocValue")]
         public IActionResult checkSublocValue(TransportationBinding model)

@@ -158,13 +158,15 @@ namespace WorkForceManagementV0.Repositories
             var currentschedule = _db.Schedules.OrderByDescending(x => x.Id).FirstOrDefault(x => !x.IsPublish);
             var routes = _db.DailyAttendances
                 .Include(x => x.TransportationRoute)
-                  .ThenInclude(x => x.SubLocation.Location.Assets).Include(x => x.ScheduleDetails)
+                  //.ThenInclude(x => x.SubLocation.Location.Assets)
+                  .Include(x => x.ScheduleDetails)
                   .Where(x => x.Day == currentDay && !x.AttendanceType.IsAbsence)
                   .Select(x => new { x.TransportationRoute, x.StaffMember, x.StaffMember.Location.Assets }).ToList();
 
             var routesbb = _db.DailyAttendances
                 .Include(x => x.TransportationRoute)
-                .ThenInclude(x => x.SubLocation.Location.Assets).Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
+                //.ThenInclude(x => x.SubLocation.Location.Assets)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Where(x => x.Day == currentDay.AddDays(-1) && !x.AttendanceType.IsAbsence
                  && x.TransportationRoute.ArriveIntervalId <= 97 && x.StaffMember.TransportationRoute.DepartIntervalId >= 97)
                  .Select(x => new { x.TransportationRoute, x.StaffMember, x.StaffMember.Location.Assets }).ToList();
@@ -674,11 +676,11 @@ namespace WorkForceManagementV0.Repositories
                 {
                     if (int.TryParse(searchQuery, out var locationId))
                     {
-                        dbDailyAttendance = dbDailyAttendance.Where(x => x.TransportationRoute.SubLocationId == locationId).OrderBy(x => x.StaffMember.EmployeeId);
+                        dbDailyAttendance = dbDailyAttendance.Where(x => x.SublocationId == locationId).OrderBy(x => x.StaffMember.EmployeeId);
                     }
                     else
                     {
-                        dbDailyAttendance = dbDailyAttendance.Where(x => x.TransportationRoute.SubLocation.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
+                        dbDailyAttendance = dbDailyAttendance.Where(x => x.Sublocation.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
                     }
                     
                 }
@@ -901,11 +903,11 @@ namespace WorkForceManagementV0.Repositories
                 {
                     if (int.TryParse(searchQuery, out var locationId))
                     {
-                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.TransportationRoute.SubLocationId == locationId) != null);
+                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.SublocationId == locationId) != null);
                     }
                     else
                     {
-                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.TransportationRoute.SubLocation.Name.ToLower().StartsWith(searchQuery.ToLower())) != null);
+                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.Sublocation.Name.ToLower().StartsWith(searchQuery.ToLower())) != null);
                     }
 
                 }
@@ -1505,11 +1507,11 @@ namespace WorkForceManagementV0.Repositories
                 {
                     if (int.TryParse(searchQuery, out var locationId))
                     {
-                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.TransportationRoute.SubLocationId == locationId) != null);
+                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.SublocationId == locationId) != null);
                     }
                     else
                     {
-                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.TransportationRoute.SubLocation.Name.ToLower().StartsWith(searchQuery.ToLower())) != null);
+                        staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && s.Sublocation.Name.ToLower().StartsWith(searchQuery.ToLower())) != null);
                     }
 
                 }
@@ -1639,11 +1641,11 @@ namespace WorkForceManagementV0.Repositories
                 {
                     if (int.TryParse(searchQuery, out var locationId))
                     {
-                        dbDailyAttendance = dbDailyAttendance.Where(x => x.TransportationRoute.SubLocationId == locationId).OrderBy(x => x.StaffMember.EmployeeId);
+                        dbDailyAttendance = dbDailyAttendance.Where(x => x.SublocationId == locationId).OrderBy(x => x.StaffMember.EmployeeId);
                     }
                     else
                     {
-                        dbDailyAttendance = dbDailyAttendance.Where(x => x.TransportationRoute.SubLocation.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
+                        dbDailyAttendance = dbDailyAttendance.Where(x => x.Sublocation.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
                     }
 
                 }

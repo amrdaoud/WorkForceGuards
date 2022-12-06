@@ -36,8 +36,8 @@ namespace WorkForceManagementV0.Repositories
             var result = new List<DayOffWithBreakDto>();
             foreach (var staffMemberInfo in staffMembers.ToList())
             {
-                var breakTypeOption = db.breakTypeOptions.Include(x => x.TransportationRoute).Include(x => x.AttendanceType).FirstOrDefault(x => x.ScheduleId == schedule.Id && x.StaffMemberId == staffMemberInfo.Id);
-                var lastBreakTypeOption = db.breakTypeOptions.Include(x => x.TransportationRoute).Include(x => x.Schedule).OrderByDescending(x => x.ScheduleId).FirstOrDefault(x => x.StaffMemberId == staffMemberInfo.Id && x.Schedule.IsPublish);
+                var breakTypeOption = db.breakTypeOptions.Include(x => x.Sublocation).Include(x => x.TransportationRoute).Include(x => x.AttendanceType).FirstOrDefault(x => x.ScheduleId == schedule.Id && x.StaffMemberId == staffMemberInfo.Id);
+                var lastBreakTypeOption = db.breakTypeOptions.Include(x => x.Sublocation).Include(x => x.TransportationRoute).Include(x => x.Schedule).OrderByDescending(x => x.ScheduleId).FirstOrDefault(x => x.StaffMemberId == staffMemberInfo.Id && x.Schedule.IsPublish);
                 var lastShift = lastBreakTypeOption != null ? lastBreakTypeOption.TransportationRoute : null;
                 var shift = breakTypeOption != null && breakTypeOption.TransportationRoute != null ? breakTypeOption.TransportationRoute : (lastShift != null ? lastShift : null);
                 var attendanceType = breakTypeOption != null ? breakTypeOption.AttendanceType : null;
@@ -49,6 +49,8 @@ namespace WorkForceManagementV0.Repositories
                 attendanceType != null ? attendanceType.Id : 0,
                 shift != null ? shift.Name : null,
                 shift != null ? shift.Id : 0,
+                breakTypeOption.SublocationId,
+                breakTypeOption.Sublocation.Name,
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[0]) : null,
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[1]) : null,
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[2]) : null,
@@ -103,10 +105,10 @@ namespace WorkForceManagementV0.Repositories
             }
             DayOffWithBreakDto data;
             var schedule = db.Schedules.OrderBy(x => x.Id).LastOrDefault(s => !s.IsPublish);
-            staffMemberInfo.BreakTypeOption = db.breakTypeOptions.Include(x => x.TransportationRoute).Include(x => x.AttendanceType).Where(x => x.ScheduleId == schedule.Id && x.StaffMemberId == staffId).ToList();
+            staffMemberInfo.BreakTypeOption = db.breakTypeOptions.Include(x => x.Sublocation).Include(x => x.TransportationRoute).Include(x => x.AttendanceType).Where(x => x.ScheduleId == schedule.Id && x.StaffMemberId == staffId).ToList();
             if(staffMemberInfo.BreakTypeOption.Count==0)
             {
-                staffMemberInfo.BreakTypeOption = db.breakTypeOptions.Include(x => x.TransportationRoute).Include(x => x.Schedule).OrderByDescending(x => x.ScheduleId).Where(x => x.StaffMemberId == staffId && x.Schedule.IsPublish==true).ToList();
+                staffMemberInfo.BreakTypeOption = db.breakTypeOptions.Include(x => x.Sublocation).Include(x => x.TransportationRoute).Include(x => x.Schedule).OrderByDescending(x => x.ScheduleId).Where(x => x.StaffMemberId == staffId && x.Schedule.IsPublish==true).ToList();
                     
             }
             staffMemberInfo.DayOffOptions = db.dayOffOptions.Where(x => x.ScheduleId == schedule.Id && x.StaffMemberId == staffId).ToList();
@@ -126,6 +128,7 @@ namespace WorkForceManagementV0.Repositories
                 attendanceType != null ? attendanceType.Id : 0,
                 shift != null ? shift.Name : null,
                 shift != null ? shift.Id : 0,
+                0,"Any",
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[0]) : null,
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[1]) : null,
                 staffMemberInfo.DayOffOptions != null && staffMemberInfo.DayOffOptions.Count >= 3 ? new DayOptionViewModel(staffMemberInfo.DayOffOptions.ToList()[2]) : null,

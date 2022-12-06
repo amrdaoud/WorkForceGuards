@@ -21,6 +21,7 @@ namespace WorkForceManagementV0.Models
             ScheduleId = model.ScheduleId;
             AttendenceTypeId = model.AcceptedBreakTypeOption;
             TransportationRouteId = model.ShiftId;
+            SublocationId = model.SublocationId;
             IsApproved = true;
             IsAdmin = true;
         }
@@ -35,6 +36,8 @@ namespace WorkForceManagementV0.Models
 
         [ForeignKey("AttendanceType")]
         public int AttendenceTypeId { get; set; }
+        [ForeignKey("Sublocation")]
+        public int SublocationId { get; set; }
 
         //[ForeignKey("Shift")]
         //public int ? ShiftId { get; set; }
@@ -47,6 +50,7 @@ namespace WorkForceManagementV0.Models
         public virtual StaffMember StaffMember { get; set; }
         public virtual Schedule Schedule { get; set; }
         public virtual AttendanceType AttendanceType { get; set; }
+        public virtual SubLocation Sublocation { get; set; }
         //public virtual Shift Shift { get; set; }
         public virtual TransportationRoute TransportationRoute { get; set; }
     }

@@ -13,7 +13,7 @@ namespace WorkForceManagementV0.Repositories.Interfaces
         List<TransportationRouteBinding> GetAll();//GET()
         List<TransportationRouteBinding> GetById(int id);// GET(ID)
         DataWithError Add(TransportationRouteBinding model); //POST(Location)
-        DataWithError Update(TransportationRouteBinding model); //PUT(ID,Location)
+        // DataWithError Update(TransportationRouteBinding model); //PUT(ID,Location)
         bool Delete(int id);//Delete(ID)
         bool CheckUniqValue(TransportationRouteBinding value);
         int ConvertTimeTostartInterval(DateTime Start, DateTime End);
@@ -22,6 +22,7 @@ namespace WorkForceManagementV0.Repositories.Interfaces
         DateTime ConvertintoDatetime(int IntervalId);
         bool CheckUniqValue(int Id, string Name);
         bool checkSublocValue(TransportationBinding model);
-        DataWithError AddTransportation(TransportationBinding model);
+        DataWithError AddGuard(TransportationBinding model);
+        DataWithError UpdateGuard(TransportationBinding model);
     }
 }

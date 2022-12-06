@@ -14,7 +14,7 @@ namespace WorkForceManagementV0.Models.DTO
 
         }
         public DayOffWithBreakDto(string staffName, int staffId, string scheduleName, int scheduleId, string attendanceTypeName, int attendanceTypeId,
-            string shiftName, int shiftId, DayOptionViewModel option1,
+            string shiftName, int shiftId, int sublocationId, string sublocationName ,DayOptionViewModel option1,
             DayOptionViewModel option2, DayOptionViewModel option3, DayOptionViewModel? option4)
         {
             StaffMemberName = staffName;
@@ -23,6 +23,8 @@ namespace WorkForceManagementV0.Models.DTO
             ScheduleId = scheduleId;
             AttendenceTypeName = attendanceTypeName;
             AttendenceTypeId = attendanceTypeId;
+            SublocationId = sublocationId;
+            SublocationName = sublocationName;
             ShiftName = shiftName;
             ShiftId = shiftId;
             DayOption1 = option1;
@@ -40,7 +42,8 @@ namespace WorkForceManagementV0.Models.DTO
 
         public string AttendenceTypeName { get; set; }
         public int AttendenceTypeId { get; set; }
-
+        public int SublocationId { get; set; }
+        public string SublocationName { get; set; }
         public string ShiftName { get; set; }
 
         public int ShiftId { get; set; }

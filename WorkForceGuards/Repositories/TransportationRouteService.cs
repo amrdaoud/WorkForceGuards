@@ -23,7 +23,7 @@ namespace WorkForceManagementV0.Repositories
         public List<TransportationRouteBinding> GetAll()
         {
             List<TransportationRouteBinding> Result = new List<TransportationRouteBinding>();
-            var transportations = db.TransportationRoutes.Include(x => x.SubLocation).Where(x => !x.IsDeleted).ToList();
+            var transportations = db.TransportationRoutes.Where(x => !x.IsDeleted).ToList();
 
 
 
@@ -34,8 +34,8 @@ namespace WorkForceManagementV0.Repositories
                 data.Id = s.Id;
                 data.Name = s.Name;
                 data.Description = s.Description;
-                data.LocationName = s.SubLocation != null ? s.SubLocation.Name : "Deleted";
-                data.LocationId = s.SubLocation != null ? s.SubLocation.Id : 0;
+                //data.LocationName = s.SubLocation != null ? s.SubLocation.Name : "Deleted";
+                //data.LocationId = s.SubLocation != null ? s.SubLocation.Id : 0;
                 data.ArriveTime = ConvertintoDatetime((int)s.ArriveIntervalId);
                 data.DepartTime = ConvertintoDatetime((int)s.DepartIntervalId);
                 data.IsIgnored = s.IsIgnored;
@@ -50,7 +50,7 @@ namespace WorkForceManagementV0.Repositories
 
         public List<TransportationRouteBinding> GetById(int id)
         {
-            var trans = db.TransportationRoutes.Where(y => y.Id == id).Include(x => x.SubLocation).ToList();
+            var trans = db.TransportationRoutes.Where(y => y.Id == id).ToList();
             List<TransportationRouteBinding> Result = new List<TransportationRouteBinding>();
             foreach (var s in trans)
             {
@@ -59,8 +59,8 @@ namespace WorkForceManagementV0.Repositories
                 data.Id = s.Id;
                 data.Name = s.Name;
                 data.Description = s.Description;
-                data.LocationName = s.SubLocation != null ? s.SubLocation.Name : "Deleted";
-                data.LocationId = s.SubLocation != null ? s.SubLocation.Id : 0;
+                //data.LocationName = s.SubLocation != null ? s.SubLocation.Name : "Deleted";
+                //data.LocationId = s.SubLocation != null ? s.SubLocation.Id : 0;
                 data.ArriveTime = ConvertintoDatetime((int)s.ArriveIntervalId);
                 data.DepartTime = ConvertintoDatetime((int)s.DepartIntervalId);
                 data.IsIgnored = s.IsIgnored;
@@ -91,7 +91,7 @@ namespace WorkForceManagementV0.Repositories
 
                 InsertRoute.Name = model.Name;
                 InsertRoute.Description = model.Description;
-                InsertRoute.SubLocationId = model.LocationId;
+                //InsertRoute.SubLocationId = model.LocationId;
                 InsertRoute.ArriveIntervalId = StartInterval;
                 InsertRoute.DepartIntervalId = EndInterval;
                 InsertRoute.IsDeleted = model.IsDeleted;
@@ -103,13 +103,13 @@ namespace WorkForceManagementV0.Repositories
                 ResponseRoute.Id = InsertRoute.Id;
                 ResponseRoute.Name = model.Name;
                 ResponseRoute.Description = model.Description;
-                ResponseRoute.LocationId = model.LocationId;
+                //ResponseRoute.LocationId = model.LocationId;
                 ///return the model 
                 ResponseRoute.ArriveTime = model.ArriveTime;
                 ResponseRoute.DepartTime = model.DepartTime;
                 ResponseRoute.IsDeleted = model.IsDeleted;
                 ResponseRoute.IsIgnored = model.IsIgnored;
-                ResponseRoute.LocationName = db.Locations.FirstOrDefault(x => x.Id == model.LocationId).Name;
+                //ResponseRoute.LocationName = db.Locations.FirstOrDefault(x => x.Id == model.LocationId).Name;
 
                 data.Result = ResponseRoute;
                 data.ErrorMessage = null;
@@ -144,70 +144,70 @@ namespace WorkForceManagementV0.Repositories
         }
 
 
-        public DataWithError Update(TransportationRouteBinding model)
-        {
-            TransportationRouteBinding Response = new TransportationRouteBinding();
-            DataWithError data = new DataWithError();
+        //public DataWithError Update(TransportationRouteBinding model)
+        //{
+        //    TransportationRouteBinding Response = new TransportationRouteBinding();
+        //    DataWithError data = new DataWithError();
 
-            if (CheckUniqValue(model))
-            {
-                TransportationRoute UpdateRoute = new TransportationRoute();
-                var StartInterval = ConvertTimeTostartInterval(model.ArriveTime, model.DepartTime);
-                var EndInterval = ConvertTimeToendtInterval(model.ArriveTime, model.DepartTime);
-                UpdateRoute.Id = model.Id;
-                UpdateRoute.Name = model.Name;
-                UpdateRoute.Description = model.Description;
-                UpdateRoute.SubLocationId = model.LocationId;
-                ///return the model 
-                UpdateRoute.ArriveIntervalId = StartInterval;
-                UpdateRoute.DepartIntervalId = EndInterval;
-                UpdateRoute.IsDeleted = model.IsDeleted;
-                UpdateRoute.IsIgnored = model.IsIgnored;
+        //    if (CheckUniqValue(model))
+        //    {
+        //        TransportationRoute UpdateRoute = new TransportationRoute();
+        //        var StartInterval = ConvertTimeTostartInterval(model.ArriveTime, model.DepartTime);
+        //        var EndInterval = ConvertTimeToendtInterval(model.ArriveTime, model.DepartTime);
+        //        UpdateRoute.Id = model.Id;
+        //        UpdateRoute.Name = model.Name;
+        //        UpdateRoute.Description = model.Description;
+        //        UpdateRoute.SubLocationId = model.LocationId;
+        //        ///return the model 
+        //        UpdateRoute.ArriveIntervalId = StartInterval;
+        //        UpdateRoute.DepartIntervalId = EndInterval;
+        //        UpdateRoute.IsDeleted = model.IsDeleted;
+        //        UpdateRoute.IsIgnored = model.IsIgnored;
 
 
-                db.Entry(UpdateRoute).State = EntityState.Modified;
-                db.SaveChanges();
+        //        db.Entry(UpdateRoute).State = EntityState.Modified;
+        //        db.SaveChanges();
 
-                Response.Id = model.Id;
-                Response.Name = model.Name;
-                Response.ArriveTime = ConvertintoDatetime((int)UpdateRoute.ArriveIntervalId);
-                Response.DepartTime = ConvertintoDatetime((int)UpdateRoute.DepartIntervalId);
-                Response.Description = model.Description;
-                Response.LocationId = model.LocationId;
-                Response.LocationName = db.Locations.FirstOrDefault(x => x.Id == model.LocationId).Name;
-                Response.IsDeleted = model.IsDeleted;
-                Response.IsIgnored = model.IsIgnored;
-                //UpdateRoute.IsDeleted = model.IsDeleted;
-                //UpdateRoute.IsIgnored = model.IsIgnored;
+        //        Response.Id = model.Id;
+        //        Response.Name = model.Name;
+        //        Response.ArriveTime = ConvertintoDatetime((int)UpdateRoute.ArriveIntervalId);
+        //        Response.DepartTime = ConvertintoDatetime((int)UpdateRoute.DepartIntervalId);
+        //        Response.Description = model.Description;
+        //        Response.LocationId = model.LocationId;
+        //        Response.LocationName = db.Locations.FirstOrDefault(x => x.Id == model.LocationId).Name;
+        //        Response.IsDeleted = model.IsDeleted;
+        //        Response.IsIgnored = model.IsIgnored;
+        //        //UpdateRoute.IsDeleted = model.IsDeleted;
+        //        //UpdateRoute.IsIgnored = model.IsIgnored;
 
-                data.Result = Response;
-                data.ErrorMessage = null;
-                return data;
-                //    db.Entry(model).State = EntityState.Modified;
+        //        data.Result = Response;
+        //        data.ErrorMessage = null;
+        //        return data;
+        //        //    db.Entry(model).State = EntityState.Modified;
 
-                //    db.SaveChanges();
+        //        //    db.SaveChanges();
 
-                //    var trans = db.TransportationRoutes.Select(x => new TransportationRouteDto
-                //    {
-                //        Id = x.Id,
-                //        Name = x.Name,
-                //        Description = x.Description,
-                //        LocationName = x.Location.Name,
-                //        LocationId = x.Location.Id,
-                //        ArriveIntervalId = x.ArriveIntervalId,
-                //        DepartIntervalId = x.DepartIntervalId,
-                //        IsIgnored = x.IsIgnored
+        //        //    var trans = db.TransportationRoutes.Select(x => new TransportationRouteDto
+        //        //    {
+        //        //        Id = x.Id,
+        //        //        Name = x.Name,
+        //        //        Description = x.Description,
+        //        //        LocationName = x.Location.Name,
+        //        //        LocationId = x.Location.Id,
+        //        //        ArriveIntervalId = x.ArriveIntervalId,
+        //        //        DepartIntervalId = x.DepartIntervalId,
+        //        //        IsIgnored = x.IsIgnored
 
-                //    }).FirstOrDefault(x => x.Id == model.Id);
-                //    data.Result = trans;
-                //    data.ErrorMessage = null;
-                //    return data;
-            }
+        //        //    }).FirstOrDefault(x => x.Id == model.Id);
+        //        //    data.Result = trans;
+        //        //    data.ErrorMessage = null;
+        //        //    return data;
+        //    }
 
-            data.Result = null;
-            data.ErrorMessage = "Duplicated Name Inserted";
-            return data;
-        }
+        //    data.Result = null;
+        //    data.ErrorMessage = "Duplicated Name Inserted";
+        //    return data;
+        //}
 
         public bool Delete(int id)
         {
@@ -268,35 +268,46 @@ namespace WorkForceManagementV0.Repositories
             var data = db.Intervals.FirstOrDefault(x => x.Id == IntervalId);
             return Convert.ToDateTime(data.TimeMap.ToString());
         }
-        public DataWithError AddTransportation(TransportationBinding model)
+        public DataWithError AddGuard(TransportationBinding model)
         {
             DataWithError data = new DataWithError();
 
             TransportationRoute trans = new TransportationRoute();
-
-            var FromDate = ConvertTimeTostartInterval(model.FromDate, model.ToDate);
-            var ToDate = ConvertTimeToendtInterval(model.FromDate, model.ToDate);
-            var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
-            var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
-            var Name = LocName + "_" + subloc.Name + "_" + FromDate + "_" + ToDate;
-            if (CheckUniqValue(model.SublocationId, Name))
+            TransportationRouteBinding ResponseRoute = new TransportationRouteBinding();
+            var FromDate = ConvertTimeTostartInterval(model.ArriveTime, model.DepartTime);
+            var ToDate = ConvertTimeToendtInterval(model.ArriveTime, model.DepartTime);
+            //var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
+            // var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
+            var Name = model.ArriveTime.ToString("HH:mm") + "_" + model.DepartTime.ToString("HH:mm");
+            if (CheckUniqValue(0, Name))
             {
                 trans.ArriveIntervalId = FromDate;
                 trans.DepartIntervalId = ToDate;
                 trans.Name = Name;
                 trans.Description = null;
-                trans.SubLocationId = model.SublocationId;
+                //trans.SubLocationId = model.SublocationId;
                 trans.IsDeleted = false;
                 trans.IsIgnored = false;
                 db.TransportationRoutes.Add(trans);
                 db.SaveChanges();
+                ResponseRoute.Id = trans.Id;
+                ResponseRoute.Name = trans.Name;
+                ResponseRoute.Description = trans.Description;
+                //ResponseRoute.LocationId = trans.SubLocationId;
+                ///return the model 
+                ResponseRoute.ArriveTime = model.ArriveTime;
+                ResponseRoute.DepartTime = model.DepartTime;
+                ResponseRoute.IsDeleted = trans.IsDeleted;
+                ResponseRoute.IsIgnored = trans.IsIgnored;
+                //ResponseRoute.LocationName = db.SubLocations.FirstOrDefault(x => x.Id == trans.SubLocationId).Name;
 
-                data.Result = trans;
+
+                data.Result = ResponseRoute;
                 data.ErrorMessage = null;
                 return data;
             }
             data.Result = null;
-            data.ErrorMessage = "the insert SublocationId is already created";
+            data.ErrorMessage = "Shift with the same arrive & depart is exist";
             return data;
 
 
@@ -309,7 +320,7 @@ namespace WorkForceManagementV0.Repositories
             //var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
             //var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
             //var Name = LocName + "_" + subloc.Name + "_" + FromDate + "_" + ToDate;
-            var sam = db.TransportationRoutes.FirstOrDefault(x => x.SubLocationId == Id && x.Name == Name);
+            var sam = db.TransportationRoutes.FirstOrDefault(x => x.Id != Id && x.Name == Name);
             if (sam == null)
             {
                 return true;
@@ -319,12 +330,12 @@ namespace WorkForceManagementV0.Repositories
         }
         public bool checkSublocValue(TransportationBinding model)
         {
-            var FromDate = ConvertTimeTostartInterval(model.FromDate, model.ToDate);
-            var ToDate = ConvertTimeToendtInterval(model.FromDate, model.ToDate);
-            var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
-            var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
-            var Name = LocName + "_" + subloc.Name + "_" + FromDate + "_" + ToDate;
-            var sam = db.TransportationRoutes.FirstOrDefault(x => x.SubLocationId == model.SublocationId && x.Name == Name);
+            var FromDate = ConvertTimeTostartInterval(model.ArriveTime, model.DepartTime);
+            var ToDate = ConvertTimeToendtInterval(model.ArriveTime, model.DepartTime);
+            // var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
+            // var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
+            var Name = model.ArriveTime.ToString("HH:mm") + "_" + model.DepartTime.ToString("HH:mm");
+            var sam = db.TransportationRoutes.FirstOrDefault(x => x.Name == Name);
             if (sam == null)
             {
                 return true;
@@ -334,5 +345,45 @@ namespace WorkForceManagementV0.Repositories
 
         }
 
+        public DataWithError UpdateGuard(TransportationBinding model)
+        {
+            DataWithError data = new DataWithError();
+
+            TransportationRoute trans = new TransportationRoute();
+            TransportationRouteBinding ResponseRoute = new TransportationRouteBinding();
+            var FromDate = ConvertTimeTostartInterval(model.ArriveTime, model.DepartTime);
+            var ToDate = ConvertTimeToendtInterval(model.ArriveTime, model.DepartTime);
+            //var subloc = db.SubLocations.FirstOrDefault(x => x.Id == model.SublocationId);
+            // var LocName = db.Locations.FirstOrDefault(x => x.Id == subloc.LocationId).Name;
+            var Name = model.ArriveTime.ToString("HH:mm") + "_" + model.DepartTime.ToString("HH:mm");
+            if (CheckUniqValue(model.Id, Name))
+            {
+                trans.Id = model.Id;
+                trans.ArriveIntervalId = FromDate;
+                trans.DepartIntervalId = ToDate;
+                trans.Name = Name;
+                trans.Description = null;
+                trans.IsDeleted = false;
+                trans.IsIgnored = false;
+                db.Entry(trans).State = EntityState.Modified;
+                db.SaveChanges();
+                ResponseRoute.Id = trans.Id;
+                ResponseRoute.Name = trans.Name;
+                ResponseRoute.Description = trans.Description;
+                ///return the model 
+                ResponseRoute.ArriveTime = model.ArriveTime;
+                ResponseRoute.DepartTime = model.DepartTime;
+                ResponseRoute.IsDeleted = trans.IsDeleted;
+                ResponseRoute.IsIgnored = trans.IsIgnored;
+
+
+                data.Result = ResponseRoute;
+                data.ErrorMessage = null;
+                return data;
+            }
+            data.Result = null;
+            data.ErrorMessage = "Shift with the same arrive & depart is exist";
+            return data;
+        }
     }
 }

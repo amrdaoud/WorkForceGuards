@@ -2,7 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
+using WorkForceGuards.Models;
 using WorkForceManagementV0.Models;
 using WorkForceManagementV0.Models.Backup;
 
@@ -102,8 +104,12 @@ namespace WorkForceManagementV0.Contexts
                     builder.Entity<Activity>().HasQueryFilter(s => !s.IsDeleted);
                     builder.Entity<Color>().HasQueryFilter(s => !s.IsDeleted);
                     builder.Entity<Shift>().HasQueryFilter(s => !s.IsDeleted);
-                    
 
+            builder.Entity<DailyAttendancePattern>()
+            .Property(e => e.DayOffs)
+            .HasConversion(
+                v => string.Join(',', v),
+                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
 
         }
 
@@ -148,6 +154,7 @@ namespace WorkForceManagementV0.Contexts
         public DbSet<BkpScheduleDetail> BkpScheduleDetails { get; set; }
         public DbSet<IpccAgent> IpccAgents { get; set; }
         public DbSet<SubLocation> SubLocations { get; set; }
+        public DbSet<DailyAttendancePattern> DailyAttendancePatterns { get; set; }
 
     }
 }

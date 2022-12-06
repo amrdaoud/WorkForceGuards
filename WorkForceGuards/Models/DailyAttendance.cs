@@ -26,6 +26,9 @@ namespace WorkForceManagementV0.Models
         //public int ShiftId { get; set; }
         [ForeignKey("TransportationRoute")]
         public int? TransportationRouteId { get; set; }
+        [ForeignKey("Sublocation")]
+        public int? SublocationId { get; set; }
+        public virtual SubLocation Sublocation { get; set; }
         [ForeignKey("HeadOfSection")]
         public int HeadOfSectionId { get; set; }
 

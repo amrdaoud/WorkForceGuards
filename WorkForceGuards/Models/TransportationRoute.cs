@@ -14,9 +14,6 @@ namespace WorkForceManagementV0.Models
         [StringLength(50, MinimumLength = 3, ErrorMessage = "Name between 3 and 50 characters")]
         public string Name { get; set; }
         public string Description { get; set; }
-        [ForeignKey("SubLocation")]
-        public int? SubLocationId { get; set; }
-        public virtual SubLocation SubLocation { get; set; }
         [Required]
         [ForeignKey("ArriveInterval")]
         public int ArriveIntervalId { get; set; }

@@ -17,6 +17,8 @@ namespace WorkForceManagementV0.Models.Bindings
         [Required]
         public int ShiftId { get; set; }
         [Required]
+        public int SublocationId { get; set; }  
+        [Required]
         public AccepedDayOff AccepedDayOffInfo { get; set; } = new AccepedDayOff();
     }
 
