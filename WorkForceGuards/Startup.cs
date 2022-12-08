@@ -84,7 +84,7 @@ namespace WorkForceManagementV0
             services.AddScoped<IAdherenceService, AdherenceService>();
             services.AddScoped<IAnalysisService, AnalysisService>();
             services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(Configuration.GetConnectionString("LocalIsoConnection")));
+            options.UseSqlServer(Configuration.GetConnectionString("ProductionAD")));
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
