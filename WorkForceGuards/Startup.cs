@@ -87,7 +87,7 @@ namespace WorkForceManagementV0
             services.AddScoped<IAnalysisService, AnalysisService>();
             services.AddScoped<IDailyAttendancePatternService, DailyAttendancePatternService>();
             services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(Configuration.GetConnectionString("LocalIsoConnection")));
+            options.UseSqlServer(Configuration.GetConnectionString("ProductionAD")));
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
