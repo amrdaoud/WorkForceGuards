@@ -11,6 +11,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
 using System.Linq;
+using WorkForceGuards.Repositories;
+using WorkForceGuards.Repositories.Interfaces;
 using WorkForceManagementV0.Contexts;
 using WorkForceManagementV0.Identity;
 using WorkForceManagementV0.Repositories;
@@ -83,6 +85,7 @@ namespace WorkForceManagementV0
             services.AddScoped<IAttendanceTypeService, AttendanceTypeService>();
             services.AddScoped<IAdherenceService, AdherenceService>();
             services.AddScoped<IAnalysisService, AnalysisService>();
+            services.AddScoped<IDailyAttendancePatternService, DailyAttendancePatternService>();
             services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("LocalIsoConnection")));
 

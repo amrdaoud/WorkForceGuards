@@ -42,7 +42,7 @@ namespace WorkForceManagementV0.Controllers
             }
 
 
-            var action = _IScheduleWithRuleService.Add(model);
+            var action = _IScheduleWithRuleService.AddWithPatterns(model);
             if (string.IsNullOrEmpty(action.ErrorMessage))
             {
                 return Ok(action.Result);

@@ -23,6 +23,7 @@ namespace WorkForceManagementV0.Models.Backup
             Day = model.Day;
             AttendanceTypeId = model.AttendanceTypeId;
             TransportationRouteId = model.TransportationRouteId;
+            SublocationId = model.SublocationId;
             HeadOfSectionId =   model.HeadOfSectionId;
             IsDeleted = false;
         }
@@ -43,6 +44,7 @@ namespace WorkForceManagementV0.Models.Backup
 
 
         public int? TransportationRouteId { get; set; }
+        public int? SublocationId { get; set; }
 
         public int HeadOfSectionId { get; set; }
         public virtual AttendanceType AttendanceType { get; set; }

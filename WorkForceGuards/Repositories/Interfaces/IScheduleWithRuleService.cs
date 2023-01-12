@@ -13,7 +13,7 @@ namespace WorkForceManagementV0.Repositories.Interfaces
         ScudualeWithRule GetAll(ClaimsPrincipal user);
        
         DataWithError Add(ScheduleWithRuleBinding model);
-
+        DataWithError AddWithPatterns(ScheduleWithRuleBinding model);
         DataWithError Edit(ScheduleWithRuleBinding model);
         DataWithError EditPublished(ScheduleWithRuleBinding model);
         DataWithError DeleteSchedule(int id);

@@ -34,5 +34,8 @@ namespace WorkForceManagementV0.Models.Backup
 
         public virtual Interval Interval { get; set; }
         public virtual Activity Activity { get; set; }
+        [ForeignKey("BackupStaff")]
+        public int? BackupStaffId { get; set; }
+        public StaffMember BackupStaff { get; set; }
     }
 }

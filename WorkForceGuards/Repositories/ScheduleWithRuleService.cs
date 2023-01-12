@@ -101,6 +101,72 @@ namespace WorkForceManagementV0.Repositories
 
         }
 
+        public DataWithError AddWithPatterns(ScheduleWithRuleBinding model)
+        {
+            DataWithError result = new DataWithError();
+
+            if (CheckLastPublishedSchedule() == true)
+            {
+                var timezone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time");
+                model.ScheduleData.StartDate = TimeZoneInfo.ConvertTimeFromUtc(model.ScheduleData.StartDate, timezone);
+                model.ScheduleData.EndDate = TimeZoneInfo.ConvertTimeFromUtc(model.ScheduleData.EndDate, timezone);
+                model.ScheduleData.CreateDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timezone);
+                // model.ScheduleData.UpdateDate= TimeZoneInfo.ConvertTimeFromUtc((DateTime)model.ScheduleData.UpdateDate, timezone);
+                if ((model.ScheduleData.EndDate - model.ScheduleData.StartDate).TotalDays > 56)
+                {
+                    return new DataWithError(null, "Range is too long max: 56 days!");
+                }
+
+                if (dateschedule(model.ScheduleData.StartDate, model.ScheduleData.EndDate, model.ScheduleData.Id))
+                {
+                    if (CheckUniqeValue(model.ScheduleData))
+                    {
+                        db.Schedules.Add(model.ScheduleData);
+                        db.SaveChanges();
+
+                        var rule = db.shiftRules.FirstOrDefault();
+                        if (rule == null)
+                        {
+                            db.shiftRules.Add(model.ShiftRuleData);
+                            db.SaveChanges();
+                        }
+                        else
+                        {
+                            rule.StartAfter = model.ShiftRuleData.StartAfter;
+                            rule.EndBefore = model.ShiftRuleData.EndBefore;
+                            rule.BreakBetween = model.ShiftRuleData.BreakBetween;
+
+                            db.Entry(rule).State = EntityState.Modified;
+                            
+                        }
+
+                        result.Result = model;
+                        result.ErrorMessage = null;
+                        //var earlierSchedule = db.Schedules.OrderByDescending(x => x.StartDate).FirstOrDefault(x => x.IsPublish);
+                        //if(earlierSchedule != null)
+                        //{
+                        //    db.DailyAttendancePatterns.AddRange(db.DailyAttendancePatterns.Where(x => x.ScheduleId == earlierSchedule.Id));
+                        //}
+                        db.SaveChanges();
+                        return result;
+                    }
+                    result.Result = null;
+                    result.ErrorMessage = "Duplicated Schedule Name Inserted";
+                    return result;
+                }
+
+
+                result.Result = null;
+                result.ErrorMessage = "schedual date is included with another schedual";
+                return result;
+            }
+
+            result.Result = null;
+            result.ErrorMessage = "Last Schedule is not published";
+            return result;
+
+        }
+
         public DataWithError Edit(ScheduleWithRuleBinding model)
         {
             DataWithError result = new DataWithError();

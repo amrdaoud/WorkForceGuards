@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using WorkForceGuards.Models;
 using WorkForceManagementV0.Models.Backup;
 
 namespace WorkForceManagementV0.Models
@@ -58,6 +59,37 @@ namespace WorkForceManagementV0.Models
             this.HeadOfSectionId = HeadOfSectionId;
             this.HaveBackup = false;
         }
+
+        public DailyAttendance(StaffMember staffMember,
+            Schedule schedule,
+            DateTime Day,
+            AttendanceType attendanceType,
+            TransportationRoute transportationRoute,
+            int sublocationId,
+            int HeadOfSectionId)
+        {
+            this.StaffMemberId = staffMember.Id;
+            this.ScheduleId = schedule.Id;
+            this.Day = Day;
+            this.AttendanceTypeId = attendanceType.Id;
+            this.SublocationId = sublocationId;
+            this.TransportationRouteId = transportationRoute.Id;
+            this.HeadOfSectionId = HeadOfSectionId;
+            this.HaveBackup = false;
+            var scheduleDetails = new List<ScheduleDetail>();
+            var currentInterval = transportationRoute.ArriveIntervalId;
+            while (currentInterval <= transportationRoute.DepartIntervalId)
+            {
+                scheduleDetails.Add(new ScheduleDetail
+                {
+                    ActivityId = attendanceType.DefaultActivityId.Value,
+                    IntervalId = currentInterval,
+                    ScheduleId = schedule.Id
+                });
+                currentInterval++;
+            }
+            this.ScheduleDetails = scheduleDetails;
+        }
         public DailyAttendance(BkpDailyAttendance model)
         {
             Id = model.DailyAttendanceId;
@@ -65,6 +97,7 @@ namespace WorkForceManagementV0.Models
             ScheduleId = model.ScheduleId;
             Day = model.Day;
             AttendanceTypeId = model.AttendanceTypeId;
+            SublocationId = model.SublocationId;
             TransportationRouteId = model.TransportationRouteId;
             HeadOfSectionId = model.HeadOfSectionId;
             IsDeleted = false;
