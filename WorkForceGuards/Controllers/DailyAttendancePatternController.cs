@@ -72,5 +72,42 @@ namespace WorkForceGuards.Controllers
             }
             return Ok(result.Result);
         }
+        [HttpGet("headcount")]
+        public IActionResult getHeadCount()
+        {
+            var result = _pattern.GetHeadcount();
+            if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                return BadRequest(new { ErrorMessage = result.ErrorMessage });
+            }
+            return Ok(result.Result);
+        }
+        [HttpPost("headcount")]
+        public IActionResult setHeadCount(Headcount model)
+        {
+            var result = _pattern.SetHeadcount(model);
+            if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                return BadRequest(new { ErrorMessage = result.ErrorMessage });
+            }
+            return Ok(result.Result);
+        }
+        [HttpPost("headcount/bulk")]
+        public IActionResult bulkHeadCount(List<Dictionary<string, string>> models)
+        {
+            var result = _pattern.BulkHeadcount(models);
+            if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                return BadRequest(new { ErrorMessage = result.ErrorMessage });
+            }
+            return Ok(result.Result);
+        }
+        [HttpPost("headcount/upload")]
+        public IActionResult bulkHeadCount([FromForm] IFormFile file)
+        {
+            var ff = file;
+
+            return Ok();
+        }
     }
 }

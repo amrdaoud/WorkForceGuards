@@ -31,6 +31,8 @@ namespace WorkForceManagementV0.Models.Bindings
     public class ManipulateDetails
     {
         public int ActivityId { get; set; }
+        public int? BackupStaffId { get; set; }
+        public string? Justification { get; set; }
         public List<ScheduleDetailManipulate> ScheduleDetailsManipulate { get; set; }
 
     }

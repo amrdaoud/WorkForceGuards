@@ -40,8 +40,8 @@ namespace WorkForceManagementV0
             {
                 builder.AllowAnyMethod()
                         .AllowAnyHeader()
-                        //.SetIsOriginAllowed(origin => origin.ToLower().StartsWith("http://awwfm140:5001")) // allow any origin
-                        .SetIsOriginAllowed(origin => true) // allow any origin
+                        .SetIsOriginAllowed(origin => origin.ToLower().StartsWith("http://awwfm140:5003") || origin.ToLower().StartsWith("http://192.168.5.140:5003")) // allow specific origin
+                        // .SetIsOriginAllowed(origin => true) // allow any origin
                         .AllowCredentials();
             }));
             services.AddAuthentication(IISDefaults.AuthenticationScheme);
@@ -87,7 +87,7 @@ namespace WorkForceManagementV0
             services.AddScoped<IAnalysisService, AnalysisService>();
             services.AddScoped<IDailyAttendancePatternService, DailyAttendancePatternService>();
             services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(Configuration.GetConnectionString("LocalIsoConnection")));
+            options.UseSqlServer(Configuration.GetConnectionString("ProductionAD")));
 
             services.AddControllers();
             services.AddSwaggerGen(c =>

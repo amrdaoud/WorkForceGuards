@@ -20,7 +20,7 @@ namespace WorkForceManagementV0.Repositories
 
         public List<Activity> GetAll()
         {
-            return db.Activities.Where(x => !x.IsUndefined).ToList();
+            return db.Activities.Where(x => !x.IsUndefined && x.Name.ToLower() != "backup").ToList();
         }
 
         public DataWithError Add(Activity model)
@@ -53,6 +53,10 @@ namespace WorkForceManagementV0.Repositories
         public DataWithError Update(Activity model)
         {
             DataWithError data = new DataWithError();
+            if(model.DisableEdit)
+            {
+                return new DataWithError(null, "This activity is protected!");
+            }
             if(CheckUniqValue(model))
             {
                 var timezone = TimeZoneInfo.FindSystemTimeZoneById("Arab Standard Time");

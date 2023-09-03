@@ -14,5 +14,8 @@ namespace WorkForceGuards.Repositories.Interfaces
         DataWithError Delete(int id);
         Task<DataWithError> GenerateSchedule();
         DataWithError GetEligibleStaffMembers(List<ScheduleDetailManipulate> models);
+        DataWithError GetHeadcount();
+        DataWithError SetHeadcount(Headcount model);
+        DataWithError BulkHeadcount(List<Dictionary<string, string>> models);
     }
 }

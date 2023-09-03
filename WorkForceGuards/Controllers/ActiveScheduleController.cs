@@ -251,10 +251,26 @@ namespace WorkForceManagementV0.Controllers
         }
 
         [Authorize(Policy = "AdminOrHos")]
+        [HttpGet("EditSublocation")]
+        public ActionResult EditSublocation(int dailyAttendanceId, int sublocationId)
+        {
+            var dataWithError = _finalScheduleService.EditSublocation(dailyAttendanceId, sublocationId, User);
+            if (string.IsNullOrEmpty(dataWithError.ErrorMessage))
+            {
+                return Ok(dataWithError.Result);
+            }
+            else
+            {
+                return BadRequest(new { ErrorMessage = dataWithError.ErrorMessage });
+            }
+        }
+
+        [Authorize(Policy = "AdminOrHos")]
         [HttpGet("EditDailyAttendanceShift")]
         public ActionResult EditDailyAttendanceShift(int dailyAttendanceId, int transportationId)
         {
-            var dataWithError = _finalScheduleService.EditDailyAttendanceShift(dailyAttendanceId, transportationId, User);
+            //var dataWithError = _finalScheduleService.EditDailyAttendanceShift(dailyAttendanceId, transportationId, User);
+            var dataWithError = _finalScheduleService.EditDailyAttendanceShiftGrd(dailyAttendanceId, transportationId, User);
             if (string.IsNullOrEmpty(dataWithError.ErrorMessage))
             {
                 return Ok(dataWithError.Result);

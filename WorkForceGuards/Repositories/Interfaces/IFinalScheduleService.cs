@@ -22,7 +22,9 @@ namespace WorkForceManagementV0.Repositories.Interfaces
         DataWithError EditScheduleDetailsMultiple(EditScheduleDetailsBinding model, ClaimsPrincipal user);
         DataWithError RemoveScheduleDetail(int scheduleDetailId, ClaimsPrincipal user);
         public DataWithError EditDailyAttendance(int dailyAttendanceId, int attendanceTypeId, ClaimsPrincipal user);
+        public DataWithError EditSublocation(int dailyAttendanceId, int sublocationId, ClaimsPrincipal user);
         public DataWithError EditDailyAttendanceShift(int dailyAttendanceId, int transportationId, ClaimsPrincipal user);
+        public DataWithError EditDailyAttendanceShiftGrd(int dailyAttendanceId, int transportationId, ClaimsPrincipal user);
         public DataWithError UndoDailyAttendance(int bkpId, ClaimsPrincipal user);
         public DataWithError UndoDailyAttendanceReturnDetails(int dailyAttendanceId, ClaimsPrincipal user);
         public DataWithError GetDailyAttendanceBackups(int dailyAttendanceId);

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using WorkForceGuards.Models;
 using WorkForceGuards.Repositories.Interfaces;
 using WorkForceManagementV0.Contexts;
+using WorkForceManagementV0.Migrations;
 using WorkForceManagementV0.Models;
 using WorkForceManagementV0.Models.Bindings;
 
@@ -25,8 +26,8 @@ namespace WorkForceGuards.Repositories
             var currentPattern = _db.DailyAttendancePatterns.Find(model.Id);
             if(currentPattern == null)
             {
-                var q = model.DayOffs.Select(x => DateTime.Parse(x));
-                model.DayOffs = model.DayOffs.Select(x => DateTime.Parse(x).ToString("dd/MM/yyyy")).ToArray();
+                // var q = model.DayOffs.Select(x => DateTime.ParseExact(x, "dd/MM/yyyy", CultureInfo.InvariantCulture));
+                model.DayOffs = model.DayOffs.Select(x => DateTime.ParseExact(x, "dd/MM/yyyy", CultureInfo.InvariantCulture).ToString("dd/MM/yyyy")).ToArray();
                 _db.DailyAttendancePatterns.Add(model);
                 _db.SaveChanges();
                 _db.Entry(model).Reference(d => d.Schedule).Load();
@@ -136,7 +137,7 @@ namespace WorkForceGuards.Repositories
                     return new DataWithError(false, "Sublocation '" + lst[i].Sublocation + "' Not Found Row " + (i + 1));
                 }
                 var transportation = transportations.FirstOrDefault(x => x.Name.ToLower() == lst[i].Shift.ToLower());
-                if (subLocation == null)
+                if (transportation == null)
                 {
                     return new DataWithError(false, "Shift '" + lst[i].Shift + "' Not Found Row " + (i + 1));
                 }
@@ -178,10 +179,10 @@ namespace WorkForceGuards.Repositories
             {
                 return new DataWithError(false, "Please Create a Schedule First!");
             }
-            if(schedule.StartDate < DateTime.Today)
-            {
-                return new DataWithError(false, "Schedule Already Started!");
-            }
+            //if(schedule.StartDate < DateTime.Today)
+            //{
+            //    return new DataWithError(false, "Schedule Already Started!");
+            //}
             var defaultForecast = _db.Forecasts.FirstOrDefault();
             if(defaultForecast == null)
             {
@@ -262,24 +263,118 @@ namespace WorkForceGuards.Repositories
         public DataWithError GetEligibleStaffMembers(List<ScheduleDetailManipulate> models)
         {
             var da = _db.DailyAttendances.Where(x => models.Select(d => d.DailyAttendanceId).Contains(x.Id));
-            if(da.Select(x => x.Sublocation.Location).Distinct().Count() > 1)
+            var daStaffs = da.Select(x => x.StaffMemberId).ToList();
+            var locations = da.Select(x => x.Sublocation.Location).Distinct().ToList();
+            if (locations.Count() > 1)
             {
                 return new DataWithError(null, "Cannot Find Backup For Multiple Locations");
             }
-            var timeMaps = _db.Intervals.Where(x => models.Select(x => x.IntervalId).Contains(x.Id)).Select(x => x.TimeMap).Distinct();
-            var days = da.Select(x => x.Day).Distinct();
-            var staffMembers = _db.StaffMembers.Where(staff => 
-            staff.DailyAttendances.Where(d =>
-            !d.AttendanceType.IsAbsence &&
-            days.Contains(d.Day)).Count() == days.Count());
-            var dailyAttendances = _db.DailyAttendances.Where(x => !x.AttendanceType.IsAbsence &&
-            !models.Select(d => d.DailyAttendanceId).Contains(x.Id) &&
-            days.Contains(x.Day) &&
-            x.ScheduleDetails.Where(s => s.Activity.IsPhone && 
-            timeMaps.Contains(s.Interval.TimeMap)).Count() == timeMaps.Count());
-            var result = dailyAttendances.Select(x => x.StaffMember).Intersect(staffMembers).Distinct().OrderBy(x => x.Name);
-            return new DataWithError(result, "");
+            //var timeMaps = _db.Intervals.Where(x => models.Select(x => x.IntervalId).Contains(x.Id)).Select(x => x.TimeMap).Distinct();
+            //var tt = _db.Intervals.ToList();
+            //var days = da.Select(x => x.Day).Distinct();
+            var mm = models.GroupBy(x => x.DailyAttendanceId).Select(g => {
+                var day = da.FirstOrDefault(d => d.Id == g.Key).Day;
+                var intervals = g.Select(y => _db.Intervals.FirstOrDefault(i => i.Id == y.IntervalId).TimeMap);
+                var dailyAttendances = _db.DailyAttendances.Where(da => !daStaffs.Contains(da.StaffMemberId) && !da.AttendanceType.IsAbsence && da.Day == day && da.Sublocation.LocationId == locations[0].Id)
+                .Where(da => da.ScheduleDetails.FirstOrDefault(sd => sd.ActivityId == 35 && intervals.Contains(sd.Interval.TimeMap)) != null)
+                ;
+                return dailyAttendances.Select(x => x.StaffMember).ToList();
+            }).Aggregate((a,b) => a.Intersect(b).ToList()).ToList();
+            //var mm = models.GroupBy(x => x.DailyAttendanceId).Select(g => new {
+            //    day = da.FirstOrDefault(d => d.Id == g.Key).Day,
+            //    timeMaps = g.Select(y => _db.Intervals.FirstOrDefault(i => i.Id == y.IntervalId).TimeMap)
+            //}).ToList();
+            //var dd = _db.StaffMembers.Where(s => s.DailyAttendances.Where(d => !d.AttendanceType.IsAbsence && mm.Select(m => m.day).Contains(d.Day)).Count() == mm.Count).ToList();
+                //&& m.timeMaps.All(t => d.ScheduleDetails.Where(sd => sd.ActivityId == 1).Select(sd => sd.Interval.TimeMap).ToList().Contains(t))) != null).ToList();
+            //&& d.ScheduleDetails.Where(sd => sd.ActivityId == 1 && m.timeMaps.Contains(sd.Interval.TimeMap)).Count() == m.timeMaps.Count())).ToList();
+            //var ss = _db.StaffMembers.Where(x => x.DailyAttendances.All(d => mm.Select(m => m.day).Contains(d.Day))).ToList();
+            //var mm = da.Select(x => new
+            //{
+            //    Day = x.Day,
+            //    TimeMaps = x.ScheduleDetails.Where(sd => sd.DailyAttendanceId == x.Id && )
+            //})
+            //var staffMembers = _db.StaffMembers.Where(staff => 
+            //staff.DailyAttendances.Where(d =>
+            //!d.AttendanceType.IsAbsence &&
+            //days.Contains(d.Day)).Count() == days.Count());
+            //var dailyAttendances = _db.DailyAttendances.Where(x => !x.AttendanceType.IsAbsence &&
+            //!models.Select(d => d.DailyAttendanceId).Contains(x.Id) &&
+            //days.Contains(x.Day) &&
+            //x.ScheduleDetails.Where(s => s.Activity.IsPhone && 
+            //timeMaps.Contains(s.Interval.TimeMap)).Count() == timeMaps.Count());
+            //var result = dailyAttendances.Select(x => x.StaffMember).Intersect(staffMembers).Distinct().OrderBy(x => x.Name);
+            return new DataWithError(mm, "");
 
+        }
+
+        public DataWithError GetHeadcount()
+        {
+            var pureResult = _db.Headcounts.Select(x => new
+            {
+                x.TransportationRouteId,
+                x.SublocationId,
+                TransportationRouteName = x.TransportationRoute.Name,
+                SublocationName = x.Sublocation.Name,
+                x.Total
+            });
+            var r = _db.Headcounts.Include(x => x.TransportationRoute).Include(x => x.Sublocation).ToList().GroupBy(x => x.Sublocation).Select(g => new
+            {
+                SublocationName = g.Key.Name,
+                ShiftCount = g.Select(d => new
+                {
+                    ShiftName = d.TransportationRoute.Name,
+                    d.Total
+                })
+            }).ToList();
+
+            return new DataWithError(pureResult, "");
+        }
+
+        public DataWithError SetHeadcount(Headcount model)
+        {
+            var available = _db.Headcounts.FirstOrDefault(x => x.TransportationRouteId == model.TransportationRouteId && x.SublocationId == model.SublocationId);
+            if(available != null)
+            {
+                available.Total = model.Total;
+                return new DataWithError(available, "");
+            }
+            else
+            {
+                _db.Headcounts.Add(model);
+                return new DataWithError(model, "");
+            }
+        }
+
+        public DataWithError BulkHeadcount(List<Dictionary<string, string>> models)
+        {
+            //_db.Database.ExecuteSqlRaw("TRUNCATE TABLE [Headcounts]");
+            var sublocations = _db.SubLocations.ToList();
+            var transportationRoutes = _db.TransportationRoutes.ToList();
+            var addResult = new List<Headcount>();
+            foreach(var m in models)
+            {
+                var sublocation = sublocations.FirstOrDefault(s => s.Name == m["Sublocation"]);
+                if(sublocation == null)
+                {
+                    return new DataWithError($"Sublocation {m["Sublocation"]} not found", null);
+                }
+                foreach(KeyValuePair<string,string> entry in m)
+                {
+                    if(entry.Key != "Sublocation")
+                    {
+                        var transportation = transportationRoutes.FirstOrDefault(x => x.Name == entry.Key);
+                        if(transportation == null)
+                        {
+                            return new DataWithError($"Shift {entry.Key} not found", null);
+                        }
+                        addResult.Add(new Headcount { Id = 0, SublocationId = sublocation.Id, TransportationRouteId = transportation.Id, Total = Convert.ToDouble(entry.Value) });
+                    }
+                }
+            }
+            _db.Database.ExecuteSqlRaw("TRUNCATE TABLE [Headcounts]");
+            _db.Headcounts.AddRange(addResult);
+            _db.SaveChanges();
+            return new DataWithError(true, "");
         }
     }
 }

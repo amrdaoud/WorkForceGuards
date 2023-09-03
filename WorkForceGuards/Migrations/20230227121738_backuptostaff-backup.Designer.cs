@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WorkForceManagementV0.Contexts;
 
 namespace WorkForceManagementV0.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230227121738_backuptostaff-backup")]
+    partial class backuptostaffbackup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,31 +54,6 @@ namespace WorkForceManagementV0.Migrations
                     b.HasIndex("TransportationId");
 
                     b.ToTable("DailyAttendancePatterns");
-                });
-
-            modelBuilder.Entity("WorkForceGuards.Models.Headcount", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<int>("SublocationId")
-                        .HasColumnType("int");
-
-                    b.Property<double>("Total")
-                        .HasColumnType("float");
-
-                    b.Property<int>("TransportationRouteId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SublocationId");
-
-                    b.HasIndex("TransportationRouteId");
-
-                    b.ToTable("Headcounts");
                 });
 
             modelBuilder.Entity("WorkForceManagementV0.Models.Activity", b =>
@@ -880,9 +857,6 @@ namespace WorkForceManagementV0.Migrations
                     b.Property<int>("IntervalId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Justification")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("ScheduleId")
                         .HasColumnType("int");
 
@@ -1349,25 +1323,6 @@ namespace WorkForceManagementV0.Migrations
                     b.Navigation("Sublocation");
 
                     b.Navigation("Transportation");
-                });
-
-            modelBuilder.Entity("WorkForceGuards.Models.Headcount", b =>
-                {
-                    b.HasOne("WorkForceManagementV0.Models.SubLocation", "Sublocation")
-                        .WithMany("Headcounts")
-                        .HasForeignKey("SublocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WorkForceManagementV0.Models.TransportationRoute", "TransportationRoute")
-                        .WithMany("Headcounts")
-                        .HasForeignKey("TransportationRouteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sublocation");
-
-                    b.Navigation("TransportationRoute");
                 });
 
             modelBuilder.Entity("WorkForceManagementV0.Models.Asset", b =>
@@ -1899,8 +1854,6 @@ namespace WorkForceManagementV0.Migrations
 
             modelBuilder.Entity("WorkForceManagementV0.Models.SubLocation", b =>
                 {
-                    b.Navigation("Headcounts");
-
                     b.Navigation("TransportationRoutes");
                 });
 
@@ -1911,8 +1864,6 @@ namespace WorkForceManagementV0.Migrations
 
             modelBuilder.Entity("WorkForceManagementV0.Models.TransportationRoute", b =>
                 {
-                    b.Navigation("Headcounts");
-
                     b.Navigation("StaffMembers");
                 });
 #pragma warning restore 612, 618

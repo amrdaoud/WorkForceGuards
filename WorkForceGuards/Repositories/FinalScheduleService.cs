@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using WorkForceManagementV0.Contexts;
@@ -89,7 +90,7 @@ namespace WorkForceManagementV0.Repositories
                 var dailyStaffs = CreateListOfDailyStaff(currentDay);
                 var acceptedBreaks = CreateAcceptedBreaks(currentDay, forecastId /*dailyStaffs*/);
                 var impossibleInterval = acceptedBreaks.FirstOrDefault(x => x.BreakCount < 0);
-                if(bypassZero)
+                if (bypassZero)
                 {
                     if (impossibleInterval != null)
                     {
@@ -100,7 +101,7 @@ namespace WorkForceManagementV0.Repositories
                         };
                     }
                 }
-                
+
                 foreach (var dailyStaff in dailyStaffs)
                 {
                     if (dailyStaff.AttendanceType.Id == absenceTypeId)
@@ -114,10 +115,10 @@ namespace WorkForceManagementV0.Repositories
                     {
                         try
                         {
-                            if(dailyStaff.StaffMember.Id == 4190)
+                            if (dailyStaff.StaffMember.Id == 4190)
                             {
                                 var q = 0;
-                            } 
+                            }
                             var breaks = CreateDailyStaffSchedule(dailyStaff, acceptedBreaks, rules, halfTypeId.Value);
                             for (int i = dailyStaff.TransportationRoute.ArriveIntervalId; i <= dailyStaff.TransportationRoute.DepartIntervalId; i++)
                             {
@@ -130,7 +131,7 @@ namespace WorkForceManagementV0.Repositories
                             return new SuccessWithMessage
                             {
                                 Succeded = false,
-                                Message = $@"Schedule for {dailyStaff.StaffMember.Name } on {currentDay.ToString("dd/MM/yyyy")} failed "
+                                Message = $@"Schedule for {dailyStaff.StaffMember.Name} on {currentDay.ToString("dd/MM/yyyy")} failed "
                             };
                         }
 
@@ -301,7 +302,7 @@ namespace WorkForceManagementV0.Repositories
         }
         private List<int> GenerateForbidden(int start, int end, List<AcceptedBreak> acceptedBreaks)
         {
-            if(bypassZero)
+            if (bypassZero)
             {
                 return new List<int>();
             }
@@ -495,7 +496,10 @@ namespace WorkForceManagementV0.Repositories
             var checkdailyAttendance = _db.DailyAttendances
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.HeadOfSection)
+                .Include(x => x.Sublocation)
                 .Where(x => x.ScheduleId == scheduleId && x.StaffMemberId == staffId)
                .OrderBy(x => x.Day);
             //if (appUser.Roles.Contains("Hos") && !(appUser.Roles.Contains("SuperUser") || appUser.Roles.Contains("Admin")))
@@ -525,6 +529,7 @@ namespace WorkForceManagementV0.Repositories
                     Id = y.Id,
                     HaveBackup = y.HaveBackup,
                     HeadOfSectionName = y.HeadOfSection.Name,
+                    SublocationName = y.Sublocation.Name,
                     ScheduleDetails = y.ScheduleDetails.OrderBy(y => y.IntervalId).ToDictionary(c => c.IntervalId, c => new ScheduleDetailDto
                     {
                         Id = c.Id,
@@ -533,7 +538,13 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId,
                     })
                 })
             };
@@ -547,9 +558,11 @@ namespace WorkForceManagementV0.Repositories
         {
             var data = new DataWithError();
             var checkschedule = _db.Schedules.FirstOrDefault(x => x.Id == scheduleId);
-            var checkdailyAttendance = _db.DailyAttendances.Include(x => x.StaffMember)
+            var checkdailyAttendance = _db.DailyAttendances.Include(x => x.StaffMember).Include(x => x.HeadOfSection).Include(x => x.Sublocation)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Where(x => x.ScheduleId == scheduleId && x.Day == day).ToList();
             if (checkschedule == null || checkdailyAttendance.Count == 0)
             {
@@ -571,6 +584,8 @@ namespace WorkForceManagementV0.Repositories
                     EmployeeId = y.StaffMember.EmployeeId,
                     AttendanceId = y.Id,
                     Name = y.StaffMember.Name,
+                    HeadOfSectionName = y.HeadOfSection.Name,
+                    SublocationName = y.Sublocation.Name,
                     ScheduleDetails = y.ScheduleDetails.ToDictionary(c => c.IntervalId, c => new ScheduleDetailDto
                     {
                         Id = c.Id,
@@ -578,7 +593,13 @@ namespace WorkForceManagementV0.Repositories
                         IntervalTimeMap = c.Interval.TimeMap,
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
-                        ActivityColor = c.Activity.Color
+                        ActivityColor = c.Activity.Color,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId
                     })
                 }).ToList()
             };
@@ -597,8 +618,11 @@ namespace WorkForceManagementV0.Repositories
             var dbDailyAttendance = _db.DailyAttendances
                 .Include(x => x.StaffMember)
                 .Include(x => x.HeadOfSection)
+                .Include(x => x.Sublocation)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Where(x => x.ScheduleId == scheduleId && x.Day == day);
             if (appUser.Roles.Contains("Hos") && !(appUser.Roles.Contains("SuperUser") || appUser.Roles.Contains("Admin")))
             {
@@ -652,7 +676,7 @@ namespace WorkForceManagementV0.Repositories
                         dbDailyAttendance = dbDailyAttendance.Where(x => x.TransportationRoute.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
                     }
                 }
-                else if(type == "Time")
+                else if (type == "Time")
                 {
                     if (TimeSpan.TryParse(searchQuery, out TimeSpan time))
                     {
@@ -664,7 +688,7 @@ namespace WorkForceManagementV0.Repositories
                     if (TimeSpan.TryParse(searchQuery, out TimeSpan time))
                     {
                         var breakActivityId = _db.Activities.FirstOrDefault(x => x.IsBreak)?.Id;
-                        if(breakActivityId != null)
+                        if (breakActivityId != null)
                         {
                             dbDailyAttendance = dbDailyAttendance
                                 .Where(x => x.ScheduleDetails.FirstOrDefault(z => z.ActivityId == breakActivityId && z.Interval.TimeMap == time) != null)
@@ -682,12 +706,12 @@ namespace WorkForceManagementV0.Repositories
                     {
                         dbDailyAttendance = dbDailyAttendance.Where(x => x.Sublocation.Name.ToLower().StartsWith(searchQuery.ToLower())).OrderBy(x => x.StaffMember.EmployeeId);
                     }
-                    
+
                 }
                 else if (type == "Activity Time")
                 {
                     var filters = searchQuery.Split('-');
-                    
+
                     if (filters.Length == 2 && TimeSpan.TryParse(filters[1], out TimeSpan time) && int.TryParse(filters[0], out int activityId))
                     {
                         if (activityId == 0)
@@ -721,6 +745,7 @@ namespace WorkForceManagementV0.Repositories
                     Name = y.StaffMember.Name,
                     AttendanceId = y.Id,
                     HeadOfSectionName = y.HeadOfSection.Name,
+                    SublocationName = y.Sublocation.Name,
                     ScheduleDetails = y.ScheduleDetails.OrderBy(y => y.IntervalId).ToDictionary(c => c.IntervalId, c => new ScheduleDetailDto
                     {
                         Id = c.Id,
@@ -729,7 +754,14 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId,
+                        Justification = c.Justification
                     })
                 }).ToList()
             };
@@ -754,7 +786,10 @@ namespace WorkForceManagementV0.Repositories
             var checkdailyAttendance = _db.DailyAttendances
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.HeadOfSection)
+                .Include(x => x.Sublocation)
                 .Where(x => x.ScheduleId == scheduleId && x.StaffMemberId == staffId && x.Day == day)
                .OrderBy(x => x.Day);
             //if (appUser.Roles.Contains("Hos") && !(appUser.Roles.Contains("SuperUser") || appUser.Roles.Contains("Admin")))
@@ -787,6 +822,7 @@ namespace WorkForceManagementV0.Repositories
                     Id = y.Id,
                     HaveBackup = y.HaveBackup,
                     HeadOfSectionName = y.HeadOfSection.Name,
+                    SublocationName = y.Sublocation.Name,
                     ScheduleDetails = y.ScheduleDetails.OrderBy(y => y.IntervalId).ToDictionary(c => c.IntervalId, c => new ScheduleDetailDto
                     {
                         Id = c.Id,
@@ -795,7 +831,14 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId,
+                        Justification = c.Justification
                     })
                 })
             };
@@ -877,7 +920,8 @@ namespace WorkForceManagementV0.Repositories
                         staffMembers = staffMembers.Where(x => x.Name.ToLower().StartsWith(searchQuery.ToLower())
                         || x.Alias.ToLower().StartsWith(searchQuery.ToLower()) || x.Email.ToLower().StartsWith(searchQuery.ToLower()));
                     }
-                } else if (type == "Hos")
+                }
+                else if (type == "Hos")
                 {
                     if (int.TryParse(searchQuery, out var employeeId))
                     {
@@ -888,7 +932,8 @@ namespace WorkForceManagementV0.Repositories
                         staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && (s.HeadOfSection.Alias.ToLower().StartsWith(searchQuery.ToLower())
                         || s.HeadOfSection.Name.ToLower().StartsWith(searchQuery.ToLower()) || s.HeadOfSection.Email.StartsWith(searchQuery.ToLower()))) != null);
                     }
-                } else if (type == "Transportation")
+                }
+                else if (type == "Transportation")
                 {
                     if (int.TryParse(searchQuery, out var transportationId))
                     {
@@ -911,13 +956,14 @@ namespace WorkForceManagementV0.Repositories
                     }
 
                 }
-                else if(type == "Time")
+                else if (type == "Time")
                 {
-                    if(TimeSpan.TryParse(searchQuery, out TimeSpan time)) {
+                    if (TimeSpan.TryParse(searchQuery, out TimeSpan time))
+                    {
                         staffMembers = staffMembers.Where(x => x.DailyAttendances.FirstOrDefault(s => s.ScheduleId == scheduleId && time >= s.TransportationRoute.ArriveInterval.TimeMap && time <= s.TransportationRoute.DepartInterval.TimeMap) != null);
                     }
                 }
-                
+
             }
 
             var ResultSize = staffMembers.Count();
@@ -935,6 +981,7 @@ namespace WorkForceManagementV0.Repositories
                         Id = d.Id,
                         ShiftId = (int)d.TransportationRouteId,
                         HeadOfSectionName = d.HeadOfSection.Name,
+                        SublocationName = d.Sublocation.Name,
                         AttendanceTypeId = d.AttendanceTypeId,
                         TransportationName = d.TransportationRoute.Name,
                         TransportationArriveTime = d.TransportationRoute.ArriveInterval.TimeMap,
@@ -943,7 +990,7 @@ namespace WorkForceManagementV0.Repositories
                         Day = d.Day,
                         Color = d.AttendanceType.DefaultActivity.Color,
                         IsAbsence = d.AttendanceType.IsAbsence,
-                        HaveBackup = d.HaveBackup
+                        HaveBackup = d.HaveBackup,
                     }).ToList()
                 }).ToList()
             };
@@ -1003,15 +1050,15 @@ namespace WorkForceManagementV0.Repositories
             var appUser = _userService.GetUserInfo(user);
             var dailyAttendancesId = _db.DailyAttendances
                 .Where(d => d.ScheduleDetails.Any(z => model.ScheduleDetailsIds.Contains(z.Id))).Distinct().Select(x => x.Id).ToList();
-            if(dailyAttendancesId.Count == 0)
+            if (dailyAttendancesId.Count == 0)
             {
                 return new DataWithError(null, "Daily Attendance Not Found !");
             }
-            foreach(int id in dailyAttendancesId)
+            foreach (int id in dailyAttendancesId)
             {
                 backupDailyAttendance(id, appUser.Alias);
             }
-            foreach(int id in model.ScheduleDetailsIds)
+            foreach (int id in model.ScheduleDetailsIds)
             {
                 _db.ScheduleDetail.Find(id).ActivityId = model.ActivityId;
             }
@@ -1024,7 +1071,14 @@ namespace WorkForceManagementV0.Repositories
                 ActivityName = x.Activity.Name,
                 Duration = x.Duration != null ? (int)x.Duration : null,
                 IntervalId = x.IntervalId,
-                IntervalTimeMap = x.Interval.TimeMap
+                IntervalTimeMap = x.Interval.TimeMap,
+                BackupStaffEmployeeId = x.BackupStaff != null ? x.BackupStaff.EmployeeId : null,
+                BackupStaffName = x.BackupStaff != null ? x.BackupStaff.Name : null,
+                BackupStaffId = x.BackupStaffId,
+                BackupToStaffEmployeeId = x.BackupToStaff != null ? x.BackupToStaff.EmployeeId : null,
+                BackupToStaffName = x.BackupToStaff != null ? x.BackupToStaff.Name : null,
+                BackupToStaffId = x.BackupToStaffId,
+                Justification = x.Justification
 
             }).ToList();
             return new DataWithError(result, "");
@@ -1071,7 +1125,7 @@ namespace WorkForceManagementV0.Repositories
         public DataWithError AddScheduleDetailMultiple(AddScheduleDetailsBinding model, int scheduleId, ClaimsPrincipal user)
         {
             var schedule = _db.Schedules.Find(scheduleId);
-            if(schedule == null)
+            if (schedule == null)
             {
                 return new DataWithError(null, "Schedule Not Found!");
             }
@@ -1086,10 +1140,10 @@ namespace WorkForceManagementV0.Repositories
             {
                 backupDailyAttendance(dailyAttendanceId, appUser.Alias);
             }
-            foreach(var element in model.AddScheduleDetails)
+            foreach (var element in model.AddScheduleDetails)
             {
                 var available = _db.ScheduleDetail.FirstOrDefault(x => x.DailyAttendanceId == element.DailyAttendanceId && x.IntervalId == element.IntervalId);
-                if(available != null)
+                if (available != null)
                 {
                     _db.ScheduleDetail
                     .Add(new ScheduleDetail(element.DailyAttendanceId, model.ActivityId, element.IntervalId, null, scheduleId));
@@ -1107,14 +1161,22 @@ namespace WorkForceManagementV0.Repositories
                 ActivityName = s.Activity.Name,
                 Duration = s.Duration != null ? (int)s.Duration : null,
                 IntervalId = s.IntervalId,
-                IntervalTimeMap = s.Interval.TimeMap
+                IntervalTimeMap = s.Interval.TimeMap,
+                BackupStaffEmployeeId = s.BackupStaff != null ? s.BackupStaff.EmployeeId : null,
+                BackupStaffName = s.BackupStaff != null ? s.BackupStaff.Name : null,
+                BackupStaffId = s.BackupStaffId,
+                BackupToStaffEmployeeId = s.BackupToStaff != null ? s.BackupToStaff.EmployeeId : null,
+                BackupToStaffName = s.BackupToStaff != null ? s.BackupToStaff.Name : null,
+                BackupToStaffId = s.BackupToStaffId,
+                Justification = s.Justification
+
             }).ToList();
             return new DataWithError(result, null);
         }
         public DataWithError EditDailyAttendance(int dailyAttendanceId, int attendanceTypeId, ClaimsPrincipal user)
         {
             var dailyAttendance = _db.DailyAttendances.Find(dailyAttendanceId);
-            
+
             if (dailyAttendance == null)
             {
                 return new DataWithError(null, "Daily Attendance not found!");
@@ -1132,10 +1194,38 @@ namespace WorkForceManagementV0.Repositories
             dailyAttendance.AttendanceTypeId = attendanceTypeId;
             _db.Entry(dailyAttendance).Reference(d => d.TransportationRoute).Load();
             _db.Entry(dailyAttendance).Reference(d => d.HeadOfSection).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.Sublocation).Load();
             _db.Entry(dailyAttendance).Collection(d => d.ScheduleDetails).Load();
             _db.Entry(attendanceType).Reference(a => a.DefaultActivity).Load();
+            var bkpActivity = _db.Activities.FirstOrDefault(x => x.Name == "Backup");
+            var phoneActivity = _db.Activities.FirstOrDefault(x => x.IsPhone);
+            var mirrorBackedUp = new List<int>();
             foreach (var scheduleDetail in dailyAttendance.ScheduleDetails)
             {
+                if (scheduleDetail.ActivityId == bkpActivity?.Id)
+                {
+                    return new DataWithError(null, "This attendance has been assigned as backup to other staff member!");
+                }
+                if (scheduleDetail.BackupStaffId != null)
+                {
+                    var mirroredAttendance = _db.DailyAttendances.FirstOrDefault(x => x.Day == dailyAttendance.Day && x.StaffMemberId == scheduleDetail.BackupStaffId);
+                    if (mirroredAttendance == null)
+                    {
+                        return new DataWithError(null, "Backed to Attendance not found!");
+                    }
+                    _db.Entry(scheduleDetail).Reference(d => d.Interval).Load();
+                    var mirroredDetails = _db.ScheduleDetail.FirstOrDefault(x => x.DailyAttendanceId == mirroredAttendance.Id && x.Interval.TimeMap == scheduleDetail.Interval.TimeMap && x.ActivityId == bkpActivity.Id);
+                    if (mirroredDetails == null)
+                    {
+                        return new DataWithError(null, "Backed to Interval not found!");
+                    }
+                    if (!mirrorBackedUp.Contains(mirroredAttendance.Id))
+                    {
+                        backupDailyAttendance(mirroredAttendance.Id, appUser.Alias);
+                    }
+                    mirroredDetails.ActivityId = phoneActivity.Id;
+                }
+                scheduleDetail.BackupStaffId = null;
                 scheduleDetail.ActivityId = attendanceType.DefaultActivityId.Value;
             }
             _db.Entry(dailyAttendance).State = EntityState.Modified;
@@ -1150,9 +1240,58 @@ namespace WorkForceManagementV0.Repositories
                 TransportationDepartTime = new TimeSpan(),
                 AttendanceTypeName = attendanceType.Name,
                 HeadOfSectionName = dailyAttendance.HeadOfSection.Name,
+                SublocationName = dailyAttendance.Sublocation.Name,
                 Day = dailyAttendance.Day,
                 Color = attendanceType.DefaultActivity.Color,
                 IsAbsence = attendanceType.IsAbsence,
+                HaveBackup = dailyAttendance.HaveBackup
+            };
+            return new DataWithError(result, "");
+        }
+
+        public DataWithError EditSublocation(int dailyAttendanceId, int sublocationId, ClaimsPrincipal user)
+        {
+            var dailyAttendance = _db.DailyAttendances.Find(dailyAttendanceId);
+
+            if (dailyAttendance == null)
+            {
+                return new DataWithError(null, "Daily Attendance not found!");
+            }
+            var sublocation = _db.SubLocations.Find(sublocationId);
+            if (sublocation == null)
+            {
+                return new DataWithError(null, "Attendance Type not found!");
+            }
+            var appUser = _userService.GetUserInfo(user);
+            if (backupDailyAttendance(dailyAttendanceId, appUser.Alias))
+            {
+                dailyAttendance.HaveBackup = true;
+            }
+            dailyAttendance.SublocationId = sublocationId;
+            _db.Entry(dailyAttendance).Reference(d => d.TransportationRoute).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.HeadOfSection).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.Sublocation).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.AttendanceType).Load();
+            _db.Entry(dailyAttendance).Collection(d => d.ScheduleDetails).Load();
+            var bkpActivity = _db.Activities.FirstOrDefault(x => x.Name == "Backup");
+            var phoneActivity = _db.Activities.FirstOrDefault(x => x.IsPhone);
+            var mirrorBackedUp = new List<int>();
+            _db.Entry(dailyAttendance).State = EntityState.Modified;
+            _db.SaveChanges();
+            var result = new DailyAttendanceByScheduleIdDto
+            {
+                Id = dailyAttendance.Id,
+                ShiftId = (int)dailyAttendance.TransportationRouteId,
+                AttendanceTypeId = dailyAttendance.AttendanceTypeId,
+                TransportationName = dailyAttendance.TransportationRoute.Name,
+                TransportationArriveTime = new TimeSpan(),
+                TransportationDepartTime = new TimeSpan(),
+                AttendanceTypeName = dailyAttendance.AttendanceType.Name,
+                HeadOfSectionName = dailyAttendance.HeadOfSection.Name,
+                SublocationName = sublocation.Name,
+                Day = dailyAttendance.Day,
+                Color = dailyAttendance.AttendanceType.DefaultActivity.Color,
+                IsAbsence = dailyAttendance.AttendanceType.IsAbsence,
                 HaveBackup = dailyAttendance.HaveBackup
             };
             return new DataWithError(result, "");
@@ -1191,7 +1330,7 @@ namespace WorkForceManagementV0.Repositories
             for (int i = 0; i < transIntervals.Count; i++)
             {
                 var oldMappedDetail = oldScheduleDetails.FirstOrDefault(x => x.IntervalId == transIntervals[i]);
-                if(oldMappedDetail == null)
+                if (oldMappedDetail == null)
                 {
                     newScheduleDetails.Add(new ScheduleDetail(dailyAttendanceId, transScheduleDetails[i].ActivityId, transIntervals[i], null, dailyAttendance.ScheduleId));
                 }
@@ -1223,14 +1362,83 @@ namespace WorkForceManagementV0.Repositories
             };
             return new DataWithError(result, "");
         }
+        public DataWithError EditDailyAttendanceShiftGrd(int dailyAttendanceId, int transportationId, ClaimsPrincipal user)
+        {
+            var dailyAttendance = _db.DailyAttendances.Include(x => x.ScheduleDetails).ThenInclude(sd => sd.Activity).Include(x => x.ScheduleDetails).ThenInclude(sd => sd.Interval).FirstOrDefault(d => d.Id == dailyAttendanceId);
+            if (dailyAttendance == null)
+            {
+                return new DataWithError(null, "Daily Attendance not found!");
+            }
+            var transportation = _db.TransportationRoutes.Find(transportationId);
+            if (transportation == null)
+            {
+                return new DataWithError(null, "Transportation not found!");
+            }
+            var appUser = _userService.GetUserInfo(user);
+            if (backupDailyAttendance(dailyAttendanceId, appUser.Alias))
+            {
+                dailyAttendance.HaveBackup = true;
+            }
+            var phoneActivity = _db.Activities.FirstOrDefault(a => a.IsPhone);
+            if(phoneActivity == null)
+            {
+                return new DataWithError(null, "Cannot find defaulat attendance activity!");
+            }
+            // _db.Entry(dailyAttendance).Collection(d => d.ScheduleDetails).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.AttendanceType).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.HeadOfSection).Load();
+            _db.Entry(dailyAttendance).Reference(d => d.TransportationRoute).Load();
+            _db.Entry(dailyAttendance.AttendanceType).Reference(d => d.DefaultActivity).Load();
+            var bkpActivity = dailyAttendance.ScheduleDetails.FirstOrDefault(x => x.Activity.Name == "Backup");
+            if(bkpActivity != null)
+            {
+                return new DataWithError(null, "This daily attendance have backup activity, please change the related daily attendance first!");
+            }
+            foreach(var currentDetail in dailyAttendance.ScheduleDetails)
+            {
+                if(currentDetail.BackupStaffId != null)
+                {
+                    var bkpDetail = _db.ScheduleDetail.FirstOrDefault(x => x.DailyAttendance.Day == dailyAttendance.Day && x.DailyAttendance.StaffMemberId == currentDetail.BackupStaffId && x.Interval.TimeMap == currentDetail.Interval.TimeMap);
+                    if(bkpDetail != null)
+                    {
+                        bkpDetail.ActivityId = phoneActivity.Id;
+                        bkpDetail.BackupToStaffId = null;
+                    }
+                }
+            }
+            dailyAttendance.ScheduleDetails.Clear();
+            for(int i = transportation.ArriveIntervalId; i <= transportation.DepartIntervalId; i++)
+            {
+                dailyAttendance.ScheduleDetails.Add(new ScheduleDetail(dailyAttendanceId, phoneActivity.Id, i, null, dailyAttendance.ScheduleId));
+            }
+            dailyAttendance.TransportationRouteId = transportationId;
+            _db.Entry(dailyAttendance).State = EntityState.Modified;
+            _db.SaveChanges();
+            var result = new DailyAttendanceByScheduleIdDto
+            {
+                Id = dailyAttendance.Id,
+                ShiftId = (int)dailyAttendance.TransportationRouteId,
+                AttendanceTypeId = dailyAttendance.AttendanceTypeId,
+                HeadOfSectionName = dailyAttendance.HeadOfSection.Name,
+                TransportationName = dailyAttendance.TransportationRoute.Name,
+                TransportationArriveTime = new TimeSpan(),
+                TransportationDepartTime = new TimeSpan(),
+                AttendanceTypeName = dailyAttendance.AttendanceType.Name,
+                Day = dailyAttendance.Day,
+                Color = dailyAttendance.AttendanceType.DefaultActivity.Color,
+                IsAbsence = dailyAttendance.AttendanceType.IsAbsence,
+                HaveBackup = dailyAttendance.HaveBackup
+            };
+            return new DataWithError(result, "");
+        }
         public DataWithError RemoveScheduleDetail(int scheduleDetailId, ClaimsPrincipal user)
         {
             var scheduleDetail = _db.ScheduleDetail.Find(scheduleDetailId);
-            if(scheduleDetail == null)
+            if (scheduleDetail == null)
             {
                 return new DataWithError(null, "Interval  not found");
             }
-            if(scheduleDetail.Duration != null)
+            if (scheduleDetail.Duration != null)
             {
                 return new DataWithError(null, "Cannot delete interval with duration");
             }
@@ -1279,7 +1487,7 @@ namespace WorkForceManagementV0.Repositories
             _db.Entry(dailyAttendance).Reference(d => d.TransportationRoute).Load();
             _db.Entry(dailyAttendance).CurrentValues.SetValues(new DailyAttendance(bkpDailyAttendance));
             if (undoScheduleDetailsDuration(dailyAttendance.ScheduleDetails.ToList(), bkpDailyAttendance.ScheduleDetails.ToList(),
-                dailyAttendance.ScheduleId,dailyAttendance.Id,out List<ScheduleDetail> newScheduleDetails))
+                dailyAttendance.ScheduleId, dailyAttendance.Id, out List<ScheduleDetail> newScheduleDetails))
             {
                 dailyAttendance.ScheduleDetails = newScheduleDetails;
             }
@@ -1318,16 +1526,20 @@ namespace WorkForceManagementV0.Repositories
             var current = _db.DailyAttendances
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.AttendanceType)
                 .FirstOrDefault(x => x.Id == dailyAttendanceId);
-            if(current == null)
+            if (current == null)
             {
                 return new DataWithError(null, "Daily Attendance Not Found");
             }
-            
+
             var backups = _db.BkpDailyAttendances
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.AttendanceType)
                 .Where(x => x.DailyAttendanceId == dailyAttendanceId).OrderByDescending(x => x.ActionTime).ToList();
             var currentResult = new BkpDailyAttendanceDto
@@ -1344,7 +1556,14 @@ namespace WorkForceManagementV0.Repositories
                     ActivityId = c.ActivityId,
                     ActivityName = c.Activity.Name,
                     ActivityColor = c.Activity.Color,
-                    Duration = c.Duration != null ? (int)c.Duration : null
+                    Duration = c.Duration != null ? (int)c.Duration : null,
+                    BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                    BackupStaffName = c.BackupStaff?.Name,
+                    BackupStaffId = c.BackupStaffId,
+                    BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                    BackupToStaffName = c.BackupToStaff?.Name,
+                    BackupToStaffId = c.BackupToStaffId,
+                    Justification = c.Justification
                 })
             };
             var backupsResult = backups.Select(y => new BkpDailyAttendanceDto
@@ -1361,11 +1580,17 @@ namespace WorkForceManagementV0.Repositories
                     ActivityId = c.ActivityId,
                     ActivityName = c.Activity.Name,
                     ActivityColor = c.Activity.Color,
-                    Duration = c.Duration != null ? (int)c.Duration : null
+                    Duration = c.Duration != null ? (int)c.Duration : null,
+                    BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                    BackupStaffName = c.BackupStaff?.Name,
+                    BackupStaffId = c.BackupStaffId,
+                    BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                    BackupToStaffName = c.BackupToStaff?.Name,
+                    BackupToStaffId = c.BackupToStaffId
                 })
             });
             var result = backupsResult.ToList();
-            result.Insert(0,currentResult);
+            result.Insert(0, currentResult);
             return new DataWithError(result, "");
         }
         public DataWithError UndoDailyAttendanceReturnDetails(int bkpId, ClaimsPrincipal user)
@@ -1404,6 +1629,8 @@ namespace WorkForceManagementV0.Repositories
             var result = _db.DailyAttendances.Where(d => d.Id == dailyAttendance.Id)
                 .Include(d => d.ScheduleDetails).ThenInclude(d => d.Interval)
                 .Include(d => d.ScheduleDetails).ThenInclude(d => d.Activity)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .ToList().Select(d =>
                 new DailyAttendanceDto
                 {
@@ -1418,7 +1645,14 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId,
+                        Justification = c.Justification
                     })
                 }).FirstOrDefault();
             return new DataWithError(result, "");
@@ -1431,16 +1665,16 @@ namespace WorkForceManagementV0.Repositories
             out List<ScheduleDetail> result)
         {
             var undefined = _db.Activities.FirstOrDefault(x => x.IsUndefined);
-            if(undefined == null)
+            if (undefined == null)
             {
                 result = null;
                 return false;
             }
             var retScheduleDetails = bkpScheduleDetails.Select(x => new ScheduleDetail(x)).ToList();
-            foreach(var scheduleDetail in currentScheduleDetails.Where(x => x.Duration != null))
+            foreach (var scheduleDetail in currentScheduleDetails.Where(x => x.Duration != null))
             {
                 var toUpdate = retScheduleDetails.FirstOrDefault(x => x.IntervalId == scheduleDetail.IntervalId);
-                if(toUpdate != null)
+                if (toUpdate != null)
                 {
                     toUpdate.Duration = scheduleDetail.Duration;
                 }
@@ -1567,8 +1801,10 @@ namespace WorkForceManagementV0.Repositories
                 .Include(x => x.HeadOfSection)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Where(x => x.ScheduleId == scheduleId && x.Day == day);
-            
+
             if (appUser.Roles.Contains("User") && !(appUser.Roles.Contains("SuperUser") || appUser.Roles.Contains("Admin") || appUser.Roles.Contains("Hos")))
             {
                 dbDailyAttendance = dbDailyAttendance.Where(d => d.StaffMember.Alias.ToLower() == appUser.Alias.ToLower());
@@ -1655,7 +1891,7 @@ namespace WorkForceManagementV0.Repositories
 
                     if (filters.Length == 2 && TimeSpan.TryParse(filters[1], out TimeSpan time) && int.TryParse(filters[0], out int activityId))
                     {
-                        if(activityId == 0)
+                        if (activityId == 0)
                         {
                             dbDailyAttendance = dbDailyAttendance
                             .Where(x => x.ScheduleDetails.FirstOrDefault(z => z.Interval.TimeMap == time) != null)
@@ -1667,7 +1903,7 @@ namespace WorkForceManagementV0.Repositories
                             .Where(x => x.ScheduleDetails.FirstOrDefault(z => z.ActivityId == activityId && z.Interval.TimeMap == time) != null)
                             .OrderBy(x => x.StaffMember.EmployeeId);
                         }
-                        
+
                     }
                 }
             }
@@ -1695,7 +1931,13 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId
                     })
                 }).ToList()
             };
@@ -1706,62 +1948,187 @@ namespace WorkForceManagementV0.Repositories
         }
         public DataWithError ManipulateScheduleDetails(ManipulateDetails model, int scheduleId, ClaimsPrincipal user, bool isStaff)
         {
+            var bkpActivity = _db.Activities.FirstOrDefault(x => x.Name == "Backup");
+            if (bkpActivity == null)
+            {
+                return new DataWithError(null, "Backup Activity not Available!");
+            }
+            var breakActivities = _db.Activities.Where(x => x.IsBreak).ToList();
+            if (breakActivities == null || breakActivities.Count == 0)
+            {
+                return new DataWithError(null, "Break Activity not Available!");
+            }
+            if (model.ActivityId == bkpActivity.Id)
+            {
+                return new DataWithError(null, "You cannot assign Backup Activity!");
+            }
             var dailyAttendances = _db.DailyAttendances
                 .Where(d => model.ScheduleDetailsManipulate.Select(x => x.DailyAttendanceId).Contains(d.Id)).Distinct();
-            if(dailyAttendances.Count() == 0)
+            if (dailyAttendances.Count() == 0)
             {
                 return new DataWithError(null, "Daily Attendances Not Found!");
             }
             var appUser = _userService.GetUserInfo(user);
-            foreach(int dailyAttendanceId in dailyAttendances.Select(x => x.Id).ToList())
-            {
-                backupDailyAttendance(dailyAttendanceId, appUser.Alias);
-            }
             var undefinedActivity = _db.Activities.FirstOrDefault(x => x.IsUndefined);
-            if(undefinedActivity == null)
+            if (undefinedActivity == null)
             {
                 return new DataWithError(null, "Undefined Activity not Available!");
             }
-            foreach(var element in model.ScheduleDetailsManipulate)
+            var currentActivity = _db.Activities.Find(model.ActivityId);
+            if (currentActivity == null)
             {
-                var scheduleDetail = _db.ScheduleDetail.FirstOrDefault(s => s.DailyAttendanceId == element.DailyAttendanceId && s.IntervalId == element.IntervalId);
-                
-                if (scheduleDetail == null)
+                return new DataWithError(null, "Current Activity not Available!");
+            }
+            var phoneActivity = _db.Activities.FirstOrDefault(x => x.IsPhone);
+            if (phoneActivity == null)
+            {
+                return new DataWithError(null, "Phone Activity not Available!");
+            }
+            var backedIds = new List<int>();
+            foreach (var element in model.ScheduleDetailsManipulate)
+            {
+                var scheduleDetail = _db.ScheduleDetail.Include(sd => sd.DailyAttendance).Include(sd => sd.Interval).FirstOrDefault(s => s.DailyAttendanceId == element.DailyAttendanceId && s.IntervalId == element.IntervalId);
+                if (scheduleDetail?.ActivityId == bkpActivity.Id && breakActivities.Select(b => b.Id).Contains(model.ActivityId))
                 {
-                    if(model.ActivityId != 0)
-                    {
-                        _db.ScheduleDetail.Add(new ScheduleDetail(element.DailyAttendanceId, model.ActivityId, element.IntervalId, null, scheduleId));
-                    }
+                    return new DataWithError(null, "You cannot assign breaks to Backup Activity!");
                 }
-                else
+                if (scheduleDetail.BackupStaffId != null)
                 {
-                    if (model.ActivityId != 0)
+                    var bkpDailyAttendance = _db.DailyAttendances.FirstOrDefault(d => d.Day == scheduleDetail.DailyAttendance.Day && d.StaffMemberId == scheduleDetail.BackupStaffId);
+                    var bkpScheduleDetail = _db.ScheduleDetail.FirstOrDefault(s => s.DailyAttendanceId == bkpDailyAttendance.Id && s.Interval.TimeMap == scheduleDetail.Interval.TimeMap);
+                    if(!backedIds.Contains(bkpDailyAttendance.Id))
                     {
-                        scheduleDetail.ActivityId = model.ActivityId;
-                        
+                        backupDailyAttendance(bkpDailyAttendance.Id, appUser.Alias);
+                        backedIds.Add(bkpDailyAttendance.Id);
+                    }
+                    bkpScheduleDetail.ActivityId = phoneActivity.Id;
+                    bkpScheduleDetail.BackupToStaffId = null;
+                }
+            }
+            if (!currentActivity.NeedBackup)
+            {
+                foreach (int dailyAttendanceId in dailyAttendances.Select(x => x.Id).ToList())
+                {
+                    backupDailyAttendance(dailyAttendanceId, appUser.Alias);
+                }
+                foreach (var element in model.ScheduleDetailsManipulate)
+                {
+                    var scheduleDetail = _db.ScheduleDetail.FirstOrDefault(s => s.DailyAttendanceId == element.DailyAttendanceId && s.IntervalId == element.IntervalId);
+
+                    if (scheduleDetail == null)
+                    {
+                        if (model.ActivityId != 0)
+                        {
+                            _db.ScheduleDetail.Add(new ScheduleDetail(element.DailyAttendanceId, model.ActivityId, element.IntervalId, null, scheduleId));
+                        }
                     }
                     else
                     {
-                        if(scheduleDetail.Duration != null)
+                        if (model.ActivityId != 0)
                         {
-                            scheduleDetail.ActivityId = undefinedActivity.Id;
+                            scheduleDetail.ActivityId = model.ActivityId;
+                            scheduleDetail.Justification = model.Justification;
+
                         }
                         else
                         {
-                            _db.ScheduleDetail.Remove(scheduleDetail);
+                            if (scheduleDetail.Duration != null)
+                            {
+                                scheduleDetail.ActivityId = undefinedActivity.Id;
+                            }
+                            else
+                            {
+                                _db.ScheduleDetail.Remove(scheduleDetail);
+                            }
+                        }
+
+                    }
+
+                }
+            }
+            else
+            {
+
+                //if (model.BackupStaffId == null)
+                //{
+                //    return new DataWithError(null, "Backup Staff Member Must Be Assigned!");
+                //}
+                var bkpStaff = _db.StaffMembers.FirstOrDefault(x => x.Id == model.BackupStaffId);
+                var bkpStaffAttendances = new List<DailyAttendance>();
+                foreach (var dailyAttendance in dailyAttendances.ToList())
+                {
+                    backupDailyAttendance(dailyAttendance.Id, appUser.Alias);
+                    var bkpStaffAttendance = _db.DailyAttendances.FirstOrDefault(x => x.StaffMemberId == (bkpStaff != null ? bkpStaff.Id : 0) && x.Day == dailyAttendance.Day && !x.AttendanceType.IsAbsence);
+                    if (bkpStaffAttendance != null)
+                    {
+                        //return new DataWithError(null, $"Backup Staff is not eligible in {dailyAttendance.Day}!");
+
+                        if (!backedIds.Contains(bkpStaffAttendance.Id))
+                        {
+                            backupDailyAttendance(bkpStaffAttendance.Id, appUser.Alias);
+                            backedIds.Add(bkpStaffAttendance.Id);
                         }
                     }
-                    
                 }
-                
+                foreach (var element in model.ScheduleDetailsManipulate)
+                {
+                    var scheduleDetail = _db.ScheduleDetail.Include(s => s.DailyAttendance).Include(s => s.Interval).FirstOrDefault(s => s.DailyAttendanceId == element.DailyAttendanceId && s.IntervalId == element.IntervalId);
+                    var bkpDailyAttendance = _db.DailyAttendances.FirstOrDefault(d => d.Day == scheduleDetail.DailyAttendance.Day && d.StaffMemberId == model.BackupStaffId);
+                    var bkpScheduleDetail = _db.ScheduleDetail.FirstOrDefault(s => s.DailyAttendanceId == (bkpDailyAttendance != null ? bkpDailyAttendance.Id : 0)&& s.Interval.TimeMap == scheduleDetail.Interval.TimeMap);
+
+                    if (scheduleDetail == null)
+                    {
+                        if (model.ActivityId != 0)
+                        {
+                            var ss = new ScheduleDetail(element.DailyAttendanceId, model.ActivityId, element.IntervalId, null, scheduleId);
+                            ss.BackupStaffId = model.BackupStaffId;
+                            _db.ScheduleDetail.Add(ss);
+                        }
+                    }
+                    else
+                    {
+                        if (model.ActivityId != 0)
+                        {
+                            scheduleDetail.ActivityId = model.ActivityId;
+                            scheduleDetail.BackupStaffId = model.BackupStaffId;
+                            scheduleDetail.Justification = model.Justification;
+
+                        }
+                        else
+                        {
+                            if (scheduleDetail.Duration != null)
+                            {
+                                scheduleDetail.ActivityId = undefinedActivity.Id;
+                                scheduleDetail.BackupStaffId = model.BackupStaffId;
+                                scheduleDetail.Justification = model.Justification;
+                            }
+                            else
+                            {
+                                _db.ScheduleDetail.Remove(scheduleDetail);
+                            }
+                        }
+
+                    }
+                    if(bkpScheduleDetail != null)
+                    {
+                        bkpScheduleDetail.ActivityId = bkpActivity.Id;
+                        bkpScheduleDetail.BackupToStaffId = scheduleDetail.DailyAttendance.StaffMemberId;
+                        scheduleDetail.Justification = model.Justification;
+                    }
+                    
+
+                }
             }
+
             _db.SaveChanges();
-            if(isStaff)
+            if (isStaff)
             {
                 var result = _db.DailyAttendances
                 .Where(d => model.ScheduleDetailsManipulate.Select(x => x.DailyAttendanceId).Contains(d.Id)).Distinct()
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.HeadOfSection)
                 .ToList()
                 .Select(y => new DailyAttendanceDto
@@ -1778,7 +2145,13 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId
                     })
                 });
                 return new DataWithError(result, null);
@@ -1790,6 +2163,8 @@ namespace WorkForceManagementV0.Repositories
                 .Include(x => x.StaffMember)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Activity)
                 .Include(x => x.ScheduleDetails).ThenInclude(x => x.Interval)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupStaff)
+                .Include(x => x.ScheduleDetails).ThenInclude(x => x.BackupToStaff)
                 .Include(x => x.HeadOfSection)
                 .ToList()
                 .Select(y => new DailyAttendanceByDayDto
@@ -1807,22 +2182,29 @@ namespace WorkForceManagementV0.Repositories
                         ActivityId = c.ActivityId,
                         ActivityName = c.Activity.Name,
                         ActivityColor = c.Activity.Color,
-                        Duration = c.Duration != null ? (int)c.Duration : null
+                        Duration = c.Duration != null ? (int)c.Duration : null,
+                        BackupStaffEmployeeId = c.BackupStaff?.EmployeeId,
+                        BackupStaffName = c.BackupStaff?.Name,
+                        BackupStaffId = c.BackupStaffId,
+                        BackupToStaffEmployeeId = c.BackupToStaff?.EmployeeId,
+                        BackupToStaffName = c.BackupToStaff?.Name,
+                        BackupToStaffId = c.BackupToStaffId,
+                        Justification = c.Justification
                     })
                 });
                 return new DataWithError(result, null);
             }
-            
+
 
         }
         public DataWithError CopyDailyAttendance(ManipulateDailyAttendance model, ClaimsPrincipal user)
         {
-            if(model.SourceId == 0 || model.DestinationIds == null || model.DestinationIds.Count == 0)
+            if (model.SourceId == 0 || model.DestinationIds == null || model.DestinationIds.Count == 0)
             {
                 return new DataWithError(null, "No Attendance Found to copy!");
             }
             var sourceAttendance = _db.DailyAttendances.Include(x => x.ScheduleDetails).FirstOrDefault(x => x.Id == model.SourceId);
-            if(sourceAttendance == null)
+            if (sourceAttendance == null)
             {
                 return new DataWithError(null, "Source attendance not found!");
             }
@@ -1831,7 +2213,7 @@ namespace WorkForceManagementV0.Repositories
                 .Include(x => x.TransportationRoute)
                 .Include(x => x.HeadOfSection)
                 .Where(x => model.DestinationIds.Contains(x.Id));
-            if(!destinationAttendances.Any())
+            if (!destinationAttendances.Any())
             {
                 return new DataWithError(null, "Destination attendances not found!");
             }
@@ -1844,10 +2226,10 @@ namespace WorkForceManagementV0.Repositories
                 setUndifinedActivity(destinationAttendance, undefinedId);
                 destinationAttendance.AttendanceTypeId = sourceAttendance.AttendanceTypeId;
                 destinationAttendance.TransportationRouteId = sourceAttendance.TransportationRouteId;
-                foreach(var scheduleDetail in sourceAttendance.ScheduleDetails)
+                foreach (var scheduleDetail in sourceAttendance.ScheduleDetails)
                 {
                     var mappedDetail = destinationAttendance.ScheduleDetails.FirstOrDefault(x => x.IntervalId == scheduleDetail.IntervalId);
-                    if(mappedDetail != null)
+                    if (mappedDetail != null)
                     {
                         mappedDetail.ActivityId = scheduleDetail.ActivityId;
                     }
@@ -1880,7 +2262,7 @@ namespace WorkForceManagementV0.Repositories
         {
             foreach (var scheduleDetail in d.ScheduleDetails.ToList())
             {
-                if(scheduleDetail.Duration == null)
+                if (scheduleDetail.Duration == null)
                 {
                     d.ScheduleDetails.Remove(scheduleDetail);
                 }
@@ -1890,7 +2272,7 @@ namespace WorkForceManagementV0.Repositories
                 scheduleDetail.ActivityId = activityId;
             }
         }
-        
+
     }
 }
 

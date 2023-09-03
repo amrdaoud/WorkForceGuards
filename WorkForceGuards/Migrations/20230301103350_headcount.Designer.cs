@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WorkForceManagementV0.Contexts;
 
 namespace WorkForceManagementV0.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230301103350_headcount")]
+    partial class headcount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -880,9 +882,6 @@ namespace WorkForceManagementV0.Migrations
                     b.Property<int>("IntervalId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Justification")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("ScheduleId")
                         .HasColumnType("int");
 
@@ -1354,13 +1353,13 @@ namespace WorkForceManagementV0.Migrations
             modelBuilder.Entity("WorkForceGuards.Models.Headcount", b =>
                 {
                     b.HasOne("WorkForceManagementV0.Models.SubLocation", "Sublocation")
-                        .WithMany("Headcounts")
+                        .WithMany()
                         .HasForeignKey("SublocationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("WorkForceManagementV0.Models.TransportationRoute", "TransportationRoute")
-                        .WithMany("Headcounts")
+                        .WithMany()
                         .HasForeignKey("TransportationRouteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1899,8 +1898,6 @@ namespace WorkForceManagementV0.Migrations
 
             modelBuilder.Entity("WorkForceManagementV0.Models.SubLocation", b =>
                 {
-                    b.Navigation("Headcounts");
-
                     b.Navigation("TransportationRoutes");
                 });
 
@@ -1911,8 +1908,6 @@ namespace WorkForceManagementV0.Migrations
 
             modelBuilder.Entity("WorkForceManagementV0.Models.TransportationRoute", b =>
                 {
-                    b.Navigation("Headcounts");
-
                     b.Navigation("StaffMembers");
                 });
 #pragma warning restore 612, 618

@@ -155,6 +155,7 @@ namespace WorkForceManagementV0.Contexts
         public DbSet<IpccAgent> IpccAgents { get; set; }
         public DbSet<SubLocation> SubLocations { get; set; }
         public DbSet<DailyAttendancePattern> DailyAttendancePatterns { get; set; }
+        public DbSet<Headcount> Headcounts { get; set; }
 
     }
 }

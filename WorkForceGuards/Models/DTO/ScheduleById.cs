@@ -29,6 +29,7 @@ namespace WorkForceManagementV0.Models.DTO
         public TimeSpan TransportationDepartTime { get; set; }
         public string AttendanceTypeName { get; set; }
         public string HeadOfSectionName { get; set; }
+        public string? SublocationName { get; set; }
         public string Color { get; set; }
         public int ShiftId { get; set; }
         public bool IsAbsence { get; set; }

@@ -37,5 +37,9 @@ namespace WorkForceManagementV0.Models.Backup
         [ForeignKey("BackupStaff")]
         public int? BackupStaffId { get; set; }
         public StaffMember BackupStaff { get; set; }
+
+        [ForeignKey("BackupToStaff")]
+        public int? BackupToStaffId { get; set; }
+        public StaffMember BackupToStaff { get; set; }
     }
 }

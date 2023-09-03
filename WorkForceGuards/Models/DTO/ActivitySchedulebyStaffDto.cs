@@ -26,7 +26,8 @@ namespace WorkForceManagementV0.Models.DTO
         public int Id { get; set; }
         public bool HaveBackup { get; set; }
         public string HeadOfSectionName { get; set; }
-       public Dictionary<int, ScheduleDetailDto> ScheduleDetails { get;set; }
+        public string? SublocationName { get; set; }
+        public Dictionary<int, ScheduleDetailDto> ScheduleDetails { get;set; }
          //public List<ScheduleDetailDto> ScheduleDetails { get; set; }
     }
 
@@ -48,5 +49,12 @@ namespace WorkForceManagementV0.Models.DTO
         public string ActivityColor { get; set; }
         public string ActivityName { get; set; }
         public int? Duration { get; set; }
+        public int? BackupStaffId { get; set; }
+        public string BackupStaffName { get; set; }
+        public int? BackupStaffEmployeeId { get; set; }
+        public int? BackupToStaffId { get; set; }
+        public string BackupToStaffName { get; set; }
+        public int? BackupToStaffEmployeeId { get; set; }
+        public string Justification { get; set; }
     }
 }

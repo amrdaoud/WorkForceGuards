@@ -22,7 +22,8 @@ namespace WorkForceManagementV0.Models.DTO
         public int Id { get; set; }
         public int EmployeeId { get; set; }
         public string Name { get; set; }
-        public string HeadOfSectionName { get; set; }
+        public string? HeadOfSectionName { get; set; }
+        public string? SublocationName { get; set; }
         public Dictionary<int,ScheduleDetailDto> ScheduleDetails { get; set; }
     }
  

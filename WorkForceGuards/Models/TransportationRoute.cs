@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using WorkForceGuards.Models;
 
 namespace WorkForceManagementV0.Models
 {
@@ -25,6 +26,7 @@ namespace WorkForceManagementV0.Models
         public virtual Interval DepartInterval { get; set; }
 
         public virtual ICollection<StaffMember> StaffMembers { get; set; }
+        public virtual ICollection<Headcount> Headcounts { get; set; }
 
     }
 }
